@@ -1,0 +1,28 @@
+# InkBoard on a NAS / home server:
+#   docker compose up -d --build      first start, and after updating the files
+#   docker compose logs -f            log (Ctrl+C to leave)
+#   docker compose down               stop
+# Then open http://<NAS-IP>:8080 in a browser; screens use the same address.
+services:
+  inkboard:
+    build:
+      context: .
+      args:
+        # Mainland China: uncomment for faster builds
+        # NODE_IMAGE: docker.m.daocloud.io/library/node:24-slim
+        # NPM_REGISTRY: https://registry.npmmirror.com
+        NPM_REGISTRY: https://registry.npmjs.org
+    image: inkboard:latest
+    container_name: inkboard
+    restart: unless-stopped
+    ports:
+      - "8080:8080"            # host port : container port -- change the left one if 8080 is taken
+    volumes:
+      - ./data:/data           # the SQLite database, photos and settings -- back up this folder
+    environment:
+      - TZ=Asia/Shanghai       # dates, the calendar and the refresh schedule
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

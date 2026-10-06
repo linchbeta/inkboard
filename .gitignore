@@ -1,0 +1,19 @@
+# server
+server/node_modules/
+server/dist/
+server/data/
+*.log
+
+# rasterised Microsoft fonts: comparison on a development machine only, never distributed
+server/assets/fonts/candidates/big/deng*
+server/assets/fonts/candidates/big/yahei*
+
+# firmware
+firmware/.pio/
+firmware/.vscode/
+firmware/expected*.txt
+firmware/actual*.txt
+firmware/cal_*.raw
+
+# deployment packages
+release/

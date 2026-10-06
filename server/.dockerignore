@@ -1,0 +1,14 @@
+node_modules
+dist
+data
+tests
+scripts
+*.log
+.git
+.gitattributes
+.gitignore
+.preview-*
+.render-*
+# rasterised Microsoft fonts: comparison on the development machine only, never distributed
+assets/fonts/candidates/big/deng*
+assets/fonts/candidates/big/yahei*

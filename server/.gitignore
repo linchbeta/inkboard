@@ -1,0 +1,8 @@
+node_modules/
+dist/
+/data/
+*.log
+
+# rasterised Microsoft fonts: comparison on this machine only, never distributed
+assets/fonts/candidates/big/deng*
+assets/fonts/candidates/big/yahei*

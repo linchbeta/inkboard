@@ -1,0 +1,8 @@
+# PlatformIO
+.pio
+
+# IDE
+.vscode/
+
+# macOS
+.DS_Store
