@@ -53,7 +53,10 @@ export function scopedKeys(key: string): string[] {
   const s = store.getStore();
   if (!s || !USER_KEYS.test(key)) return [key];
   const u = userKey(s.userId, key);
-  return s.device && DEVICE_KEYS.test(key) ? [deviceKey(s.device, key), u] : [u];
+  if (!s.device || !DEVICE_KEYS.test(key)) return [u];
+  // a word plan is never inherited: screens starting from the same one (same shuffle,
+  // same place) would show the same words in step
+  return key.startsWith("study:") ? [deviceKey(s.device, key)] : [deviceKey(s.device, key), u];
 }
 
 export const isUserKey = (key: string) => USER_KEYS.test(key);

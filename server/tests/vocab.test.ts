@@ -174,3 +174,34 @@ test("studyCard: a textbook in its order, progress saved, reviews labelled, own 
     for (const ch of "談図駅사랑あ") assert.ok(bigFont("wenkai", 24).glyphs.has(ch.codePointAt(0)!), ch);
   } finally { f.restore(); }
 });
+
+test("word plans are per screen: never inherited from the user's, inherited ones reseeded once", async () => {
+  const { mkdtempSync, rmSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const { runAs } = await import("../src/scope.js");
+  const { getSetting, setRawSetting } = await import("../src/db.js");
+  const dir = mkdtempSync(join(tmpdir(), "inkboard-"));
+  try {
+    const file = join(dir, "t.db");
+    let db = openDb(file);
+    const plan = JSON.stringify({ next: 0, log: [[7, 20732]], turn: 1, seed: 247308 });
+    setRawSetting(db, "u:1:study:junior", JSON.stringify({ next: -1, log: [], turn: 0, seed: 247308 }));
+    // a screen without a plan of its own does not read the user's
+    assert.equal(runAs(1, () => getSetting(db, "study:junior", "none"), "AA:00:00:00:00:01"), "none");
+    // plans copied from the user's before: a new shuffle on the next start, place kept
+    setRawSetting(db, "d:AA:00:00:00:00:01:study:junior", plan);
+    setRawSetting(db, "d:AA:00:00:00:00:02:study:junior", plan);
+    setRawSetting(db, "d:AA:00:00:00:00:03:study:cet4", plan);  // another book: its own plan
+    db.prepare("DELETE FROM setting WHERE key = 'fix:study-seed'").run();
+    db.close();
+    db = openDb(file);
+    const p1 = JSON.parse(rawSetting(db, "d:AA:00:00:00:00:01:study:junior")!);
+    const p2 = JSON.parse(rawSetting(db, "d:AA:00:00:00:00:02:study:junior")!);
+    assert.notEqual(p1.seed, 247308);
+    assert.notEqual(p1.seed, p2.seed);
+    assert.deepEqual([p1.next, p1.log], [0, [[7, 20732]]]);
+    assert.equal(rawSetting(db, "d:AA:00:00:00:00:03:study:cet4"), plan);
+    db.close();
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});

@@ -96,7 +96,30 @@ export function openDb(path: string): Db {
   if (!dcols.includes("owner_id")) db.exec("ALTER TABLE device ADD COLUMN owner_id INTEGER");
   const pcols = (db.prepare("PRAGMA table_info(photo)").all() as { name: string }[]).map((c) => c.name);
   if (!pcols.includes("user_id")) db.exec("ALTER TABLE photo ADD COLUMN user_id INTEGER");
+  reseedInheritedStudy(db);
   return db;
+}
+
+/**
+ * Screens used to start their word plan from the user's (e.g. one made by a preview), so
+ * several screens shared its shuffle and showed the same words. Once: a screen's plan with
+ * the shuffle of a user's plan for the same book gets its own (place and history kept).
+ */
+function reseedInheritedStudy(db: Db): void {
+  const FLAG = "fix:study-seed";
+  if (rawSetting(db, FLAG) !== undefined) return;
+  const rows = db.prepare("SELECT key, value FROM setting WHERE key LIKE 'u:%:study:%' OR key LIKE 'd:%:study:%'")
+    .all() as { key: string; value: string }[];
+  const seedOf = (v: string) => { try { return (JSON.parse(v) as { seed?: number }).seed; } catch { return undefined; } };
+  const bookOf = (k: string) => k.slice(k.indexOf(":study:") + 7);
+  const userSeeds = new Set(rows.filter((r) => r.key.startsWith("u:")).map((r) => `${bookOf(r.key)}|${seedOf(r.value)}`));
+  for (const r of rows) {
+    if (!r.key.startsWith("d:") || !userSeeds.has(`${bookOf(r.key)}|${seedOf(r.value)}`)) continue;
+    const p = JSON.parse(r.value) as { seed: number };
+    p.seed = Math.floor(Math.random() * 1e6);
+    setRawSetting(db, r.key, JSON.stringify(p));
+  }
+  setRawSetting(db, FLAG, "1");
 }
 
 const nowIso = (): string => new Date().toISOString();
