@@ -40,8 +40,9 @@ const db = openDb(":memory:");
 db.prepare("INSERT INTO user (id, name, pass, admin, created_at) VALUES (1, 'demo', '', 1, '2026-01-01T00:00:00Z')").run();
 await runAs(1, async () => {
   setPlace(db, { name: "北京", lat: 39.9, lon: 116.4, timezone: "Asia/Shanghai" });
-  addMessage(db, "妈妈", "晚上加班，冰箱里有饺子，热一下再吃。作业写完早点睡！", at(9, 8, 30));
+  // newest last: the list keeps insertion order, newest first
   addMessage(db, "爸爸", "周六去爬山，记得把运动鞋找出来。", at(8, 20, 5));
+  addMessage(db, "妈妈", "晚上加班，冰箱里有饺子，热一下再吃。作业写完早点睡！", at(9, 8, 30));
   setModeConfig(db, "agenda", SCREENS.agenda.config!, {
     local: "2026-10-09 16:00-17:00 家长会 @学校\n2026-10-09 牙医复诊 @口腔医院\n2026-10-10 09:00 爬山 @香山\n2026-10-12 19:30 钢琴课\n每周一 07:50 升旗仪式",
   });
