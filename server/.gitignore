@@ -6,3 +6,6 @@ dist/
 # rasterised Microsoft fonts: comparison on this machine only, never distributed
 assets/fonts/candidates/big/deng*
 assets/fonts/candidates/big/yahei*
+
+# local settings for docker compose (e.g. INKBOARD_PORT)
+.env

@@ -20,7 +20,7 @@ docker compose up -d --build
 
 几个可能用到的地方：
 
-- 8080 被占了，就改 `docker-compose.yml` 里 `ports` 冒号左边的数字，比如 `"8090:8080"`，设备上的地址也跟着改。
+- 8080 被别的程序占了（启动时报 `port is already allocated`），就在 `docker-compose.yml` 旁边建一个 `.env` 文件，写一行 `INKBOARD_PORT=8090`（换成任意空闲端口），再执行一次 `docker compose up -d --build`。后台地址和屏幕上的服务器地址都要跟着换成新端口。
 - 时区默认 `Asia/Shanghai`，日期和刷新时间都按它算，在 `docker-compose.yml` 里改。
 - 国内拉镜像慢，把 `docker-compose.yml` 里 `NODE_IMAGE` 和 `NPM_REGISTRY` 那两行的注释去掉，会改用 DaoCloud 和 npmmirror 的源。
 - 看日志 `docker compose logs -f`，停掉 `docker compose down`。
