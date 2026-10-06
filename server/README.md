@@ -75,7 +75,7 @@ npm test               # 跑测试
 npx tsc --noEmit -p .  # 类型检查
 ```
 
-`scripts/bench-render.ts` 可以测各个布局的渲染耗时，`scripts/export-firmware-calendar.ts` 用来给固件生成离线日历的数据。
+`scripts/bench-render.ts` 可以测各个布局的渲染耗时，`scripts/render-gallery.ts` 用示例内容把每个布局画成预览图放到仓库根目录的 `pic/`，`scripts/export-firmware-calendar.ts` 用来给固件生成离线日历的数据。
 
 代码大致是这么分的：
 

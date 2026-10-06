@@ -16,6 +16,30 @@
 
 文字都是按屏幕的原生分辨率用点阵字体画的，没有缩放，所以小字也清楚。照片会按屏幕能显示的几种颜色做抖动。
 
+## 画面一览
+
+下面是后端为两块屏生成的预览图，左边是 3.98 寸（768×552，黑白黄红），右边是 4.2 寸（400×300，黑白红）。留言、日程、待办这些内容是编的，天气、行情、资讯是生成时联网取的。在 `server` 目录下运行 `npx tsx scripts/render-gallery.ts` 可以重新生成。
+
+| 布局 | 3.98 寸 | 4.2 寸 |
+|---|---|---|
+| 日历 | <img src="pic/calendar-398.png" width="384"> | <img src="pic/calendar-42.png" width="200"> |
+| 日期牌 | <img src="pic/datecard-398.png" width="384"> | <img src="pic/datecard-42.png" width="200"> |
+| 天气 | <img src="pic/weather-398.png" width="384"> | <img src="pic/weather-42.png" width="200"> |
+| 相框 | <img src="pic/photo-398.png" width="384"> | <img src="pic/photo-42.png" width="200"> |
+| 年度进度 | <img src="pic/yearprogress-398.png" width="384"> | <img src="pic/yearprogress-42.png" width="200"> |
+| 倒数日 | <img src="pic/countdown-398.png" width="384"> | <img src="pic/countdown-42.png" width="200"> |
+| 留言板 | <img src="pic/messages-398.png" width="384"> | <img src="pic/messages-42.png" width="200"> |
+| 待办作业 | <img src="pic/todo-398.png" width="384"> | <img src="pic/todo-42.png" width="200"> |
+| 古诗词 | <img src="pic/poetry-398.png" width="384"> | <img src="pic/poetry-42.png" width="200"> |
+| 外语单词 | <img src="pic/words-398.png" width="384"> | <img src="pic/words-42.png" width="200"> |
+| 月相黄历 | <img src="pic/almanac-398.png" width="384"> | <img src="pic/almanac-42.png" width="200"> |
+| 日程 | <img src="pic/agenda-398.png" width="384"> | <img src="pic/agenda-42.png" width="200"> |
+| 课程表 | <img src="pic/timetable-398.png" width="384"> | <img src="pic/timetable-42.png" width="200"> |
+| 看板 | <img src="pic/dashboard-398.png" width="384"> | <img src="pic/dashboard-42.png" width="200"> |
+| 一言 | <img src="pic/hitokoto-398.png" width="384"> | <img src="pic/hitokoto-42.png" width="200"> |
+| 行情 | <img src="pic/market-398.png" width="384"> | <img src="pic/market-42.png" width="200"> |
+| 资讯 | <img src="pic/news-398.png" width="384"> | <img src="pic/news-42.png" width="200"> |
+
 ## 屏幕
 
 我手上实测过的是 3.98 寸 SE0398NZ07（A0 版，黑白黄红）和 4.2 寸 HINK SSD1683（黑白红）。3.98 寸的 A1 版也写好了驱动，但还没有实物测过。
