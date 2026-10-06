@@ -66,19 +66,24 @@ export function renderWords(panel: Panel, ctx: ScreenContext) {
   const f = screenWithHeader(panel, ctx, `${langName(data.lang ?? "en")}单词`, data.level);
   const { c, W, H, large, m } = f;
   const x0 = m + (large ? 24 : 6), x1 = W - m - (large ? 24 : 6), tw = x1 - x0;
+  // type sizes: the 3.98"'s on dense panels; a step smaller on the 5.83" / 7.5" (~130 ppi),
+  // where the same pixels come out 1.7x as large (layout and spacing stay the large ones)
+  const dense = large && (panel.ppi ?? 130) >= 200;
+  const mid = large && !dense;
 
   // fonts: the word as large as fits; the rest fixed per panel
   // Latin words in Inter; others (Cyrillic) in the large Chinese face
-  const wordFonts = covers(bigRef("inter", 24), w.word) ? (large ? [80, 64, 48, 32] : [48, 32, 24]).map((px) => bigRef("inter", px))
-    : cjkDisplay(large);
+  const wordFonts = covers(bigRef("inter", 24), w.word)
+    ? (dense ? [80, 64, 48, 32] : [48, 32, 24]).map((px) => bigRef("inter", px))
+    : cjkDisplay(large, mid ? 32 : 99);
   const wordF = pick(wordFonts, (rf) => width(rf, w.word) <= tw);
   // IPA in Inter; a Japanese reading (kana) in WenKai
-  const ipaF = fontFor(w.ipa, bigRef("inter", large ? 32 : 20), cjkAt(large, large ? 28 : 20));
+  const ipaF = fontFor(w.ipa, bigRef("inter", dense ? 32 : mid ? 24 : 20), cjkAt(large, dense ? 28 : mid ? 24 : 20));
   const ipaText = covers(bigRef("inter", 24), w.ipa) ? `/${w.ipa}/` : w.ipa;
-  const zhF = cjkAt(large, large ? 32 : 24);
-  const posF = fontFor(w.pos, bigRef("inter", large ? 24 : 20), cjkAt(large, large ? 24 : 20));  // ("名", "自五": Japanese / Korean parts of speech)
-  const exF = fontFor(w.example, bigRef("inter", large ? 24 : 20), bigRef("wenkai", large ? 24 : 20));
-  const exZhF = large ? bigRef("wenkai", 24) : wqy12;
+  const zhF = cjkAt(large, dense ? 32 : 24);
+  const posF = fontFor(w.pos, bigRef("inter", dense ? 24 : 20), cjkAt(large, dense ? 24 : 20));  // ("名", "自五": Japanese / Korean parts of speech)
+  const exF = fontFor(w.example, bigRef("inter", dense ? 24 : 20), bigRef("wenkai", dense ? 24 : 20));
+  const exZhF = dense ? bigRef("wenkai", 24) : mid ? bigRef("wenkai", 20) : wqy12;
   const exLines = w.example ? wrapText(exF, w.example, tw, 3) : [];
   const exZhLines = w.exampleZh ? wrapText(exZhF, w.exampleZh, tw, 2) : [];
   const posW = w.pos ? width(posF, w.pos) + (large ? 16 : 10) : 0;

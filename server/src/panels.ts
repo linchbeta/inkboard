@@ -18,6 +18,12 @@ export interface Panel {
    * the 3.98" render dark, so colourful dithering there uses 2x2 blocks. Default 1.
    */
   colorDot?: number;
+  /**
+   * Pixels per inch, about. The large layouts are drawn for the 3.98" (238); on the 5.83"
+   * and 7.5" (~130) the same pixel sizes come out 1.7x as large, so type that would look
+   * oversized there (the word card's) steps down. Unknown panels: 130.
+   */
+  ppi?: number;
   /** Radius (px) of the visible area's rounded corners, 0 for square panels. */
   cornerRadius: number;
   /** How the colours actually look on the panel, for previews and photo dithering. */
@@ -43,6 +49,7 @@ export const PANELS: Record<string, Panel> = {
     colors: 4,
     codes: [0b00, 0b01, 0b10, 0b11],
     colorDot: 2,
+    ppi: 238,
     cornerRadius: 36, // estimated from the panel (~3.9 mm at ~0.107 mm/px); adjust if it differs
     measured: MEASURED,
   },
@@ -55,6 +62,7 @@ export const PANELS: Record<string, Panel> = {
     height: 300,
     colors: 3,
     codes: [0b00, 0b01, 0b11, 0b11],
+    ppi: 119,
     cornerRadius: 0,
     measured: { ...MEASURED, yellow: MEASURED.red },
   },
@@ -68,6 +76,7 @@ export const PANELS: Record<string, Panel> = {
     height: 300,
     colors: 4,
     codes: [0b00, 0b01, 0b10, 0b11],
+    ppi: 119,
     cornerRadius: 0,
     measured: MEASURED,
   },
@@ -79,6 +88,7 @@ export const PANELS: Record<string, Panel> = {
     height: 480,
     colors: 3,
     codes: [0b00, 0b01, 0b11, 0b11],
+    ppi: 138,
     cornerRadius: 0,
     measured: { ...MEASURED, yellow: MEASURED.red },
   },
@@ -90,6 +100,7 @@ export const PANELS: Record<string, Panel> = {
     height: 480,
     colors: 3,
     codes: [0b00, 0b01, 0b11, 0b11],
+    ppi: 124,
     cornerRadius: 0,
     measured: { ...MEASURED, yellow: MEASURED.red },
   },
