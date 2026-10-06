@@ -85,8 +85,8 @@ export function renderWords(panel: Panel, ctx: ScreenContext) {
   // The meaning (all its senses, up to 6) and the example with its translation, whole: of
   // the sizes and line spacings that fit, the least reduced (each step has a cost: tighter
   // lines are cheap, a smaller meaning or word dear, the example in the bitmap face dearer;
-  // a last line of one or two characters about a size step). The panel's tier sets
-  // the sizes to start from.
+  // a last line of one or two characters about a size step), keeping the meaning and the
+  // example in proportion. The panel's tier sets the sizes to start from.
   const cjk = (px: number) => (!large && getFont() === "pixel" ? cjkAt(false, px) : bigRef(getFont() === "sans" ? "sans" : "wenkai", px));
   const zhList = [...(dense ? [32, 28, 24, 22] : large ? [24, 22, 20] : [22, 20]).map(cjk), wqy12];
   const exList = [...(dense ? [24, 20] : [20]).map((px) => fontFor(w.example, bigRef("inter", px), cjk(px))),
@@ -122,6 +122,10 @@ export function renderWords(panel: Panel, ctx: ScreenContext) {
       for (const tight of [false, true]) {
         const cost = (tight ? 1 : 0) + zi * 3 + ei * 2 + ezi * 2 + wi * 4 + (exList[ei] === wqy12 ? 6 : 0);
         if (cost >= best) continue;
+        // in proportion: the meaning at most a third larger than the example and not
+        // smaller, the translation not above the example
+        const zh = fh(zhList[zi]), ex = fh(exList[ei]);
+        if (w.example && (zh > ex * 1.35 || zh < ex * 0.9 || fh(exZhList[ezi]) > ex)) continue;
         const l = layout(zi, ei, ezi, wi, tight);
         const c2 = cost + 4 * orphan(l.zhLines) + orphan(l.exLines) + orphan(l.exZhLines);
         if (c2 < best && fits(l)) { L = l; best = c2; }
