@@ -29,10 +29,10 @@ docker compose up -d --build
 - 更新：用新的部署包覆盖代码文件（保留 `data` 文件夹），再执行一次 `docker compose up -d --build`
 - 镜像里只有编译后的代码、生产依赖、字体和节假日数据；开发机上对比用的微软字体不会打进镜像（`.dockerignore`）
 
-在开发机上打部署包（只包含仓库里提交过的文件）：
+在开发机上打部署包（在仓库根目录执行，只取 `server/` 里提交过的文件；`release/` 不进仓库）：
 
 ```powershell
-git archive --format=zip -o ..\release\inkboard-docker-20261006.zip HEAD
+git archive --format=zip -o release\inkboard-docker-20261006.zip HEAD:server
 ```
 
 ### 在 Windows 电脑上
