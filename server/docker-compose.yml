@@ -15,6 +15,7 @@ services:
         # NPM_REGISTRY: https://registry.npmmirror.com
         NPM_REGISTRY: https://registry.npmjs.org
     image: inkboard:latest
+    pull_policy: build        # build on every `up`, also when started from a NAS web UI
     container_name: inkboard
     restart: unless-stopped
     ports:

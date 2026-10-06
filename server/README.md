@@ -24,7 +24,7 @@ docker compose up -d --build
 - 时区默认 `Asia/Shanghai`，日期和刷新时间都按它算，在 `docker-compose.yml` 里改。
 - 国内拉镜像慢，把 `docker-compose.yml` 里 `NODE_IMAGE` 和 `NPM_REGISTRY` 那两行的注释去掉，会改用 DaoCloud 和 npmmirror 的源。
 - 看日志 `docker compose logs -f`，停掉 `docker compose down`。
-- 升级：新代码覆盖旧的（`data` 留着），再跑一次 `docker compose up -d --build`。
+- 升级：新代码覆盖旧的（`data` 留着），再跑一次 `docker compose up -d --build`。`docker-compose.yml` 里设了 `pull_policy: build`，每次启动都会先构建，所以在 NAS 的 Docker 网页上重新启动这个项目也能用上新代码；依赖没变时有缓存，十几秒就好。
 
 镜像里只有编译好的代码、生产依赖、字体和节假日数据。开发时对比用的微软字体被 `.dockerignore` 挡在外面，不会打进去。
 
