@@ -80,26 +80,54 @@ export function renderWords(panel: Panel, ctx: ScreenContext) {
   // IPA in Inter; a Japanese reading (kana) in WenKai
   const ipaF = fontFor(w.ipa, bigRef("inter", dense ? 32 : mid ? 24 : 20), cjkAt(large, dense ? 28 : mid ? 24 : 20));
   const ipaText = covers(bigRef("inter", 24), w.ipa) ? `/${w.ipa}/` : w.ipa;
-  const zhF = cjkAt(large, dense ? 32 : 24);
   const posF = fontFor(w.pos, bigRef("inter", dense ? 24 : 20), cjkAt(large, dense ? 24 : 20));  // ("名", "自五": Japanese / Korean parts of speech)
   const exF = fontFor(w.example, bigRef("inter", dense ? 24 : 20), bigRef("wenkai", dense ? 24 : 20));
   const exZhF = dense ? bigRef("wenkai", 24) : mid ? bigRef("wenkai", 20) : wqy12;
-  const exLines = w.example ? wrapText(exF, w.example, tw, 3) : [];
-  const exZhLines = w.exampleZh ? wrapText(exZhF, w.exampleZh, tw, 2) : [];
+  let exLines = w.example ? wrapText(exF, w.example, tw, 3) : [];
+  let exZhLines = w.exampleZh ? wrapText(exZhF, w.exampleZh, tw, 2) : [];
   const posW = w.pos ? width(posF, w.pos) + (large ? 16 : 10) : 0;
-  // dictionary meanings can be long: the first senses only (one on the 4.2")
-  const zhLines = wrapText(zhF, shortMeaning(w.zh, large ? 3 : 1), tw - posW, 2);
+  const exLH = Math.round(fh(exF) * 1.3), exZhLH = Math.round(fh(exZhF) * 1.35);
+  const exHeight = () => (exLines.length ? exLines.length * exLH + exZhLines.length * exZhLH + (large ? 18 : 10) : 0);
+  const reviewH = prevWords.length ? (large ? 40 : 24) : 0;
+  const avail = H - f.top - reviewH - (large ? 12 : 6);
+  const zhSizes = dense ? [32, 28, 24] : [24, 22, 20];
+  const zhLH = (rf: RefFont) => Math.round(fh(rf) * 1.25);
+  const minGap = large ? 10 : 4;
+  const others = () => fh(wordF) + (w.ipa ? fh(ipaF) : 0) + exHeight() + minGap * ((w.ipa ? 1 : 0) + (exLines.length ? 1 : 0) + 3);
+  // the meaning comes first: a long example (on a small panel) is shortened until the whole
+  // meaning fits at the smallest size
+  const senses = w.zh.split(/[；;]/).map((x) => x.trim()).filter(Boolean).slice(0, 6);
+  const smallest = cjkAt(large, zhSizes[zhSizes.length - 1]);
+  const zhNeed = Math.min(3, wrapText(smallest, senses.join("；"), tw - posW).length) * zhLH(smallest);
+  if (others() + zhNeed > avail && exZhLines.length > 1) exZhLines = wrapText(exZhF, w.exampleZh, tw, 1);
+  if (others() + zhNeed > avail && exLines.length > 2) exLines = wrapText(exF, w.example, tw, 2);
+  if (others() + zhNeed > avail) exZhLines = [];
+  if (others() + zhNeed > avail && exLines.length > 1) exLines = wrapText(exF, w.example, tw, 1);
+  const exH = exHeight();
+
+  // the meaning: all its senses (up to 6) at the largest size that keeps them to two lines
+  // (three at the smallest) in the room the other sections leave; else fewer whole senses
+  const zhRoom = avail - others();
+  let zhF = cjkAt(large, zhSizes[zhSizes.length - 1]);
+  let zhLines = wrapText(zhF, shortMeaning(w.zh, 1), tw - posW, 2);  // (nothing fits: the first sense, cut)
+  search: for (let n = senses.length; n >= 1; n--) {
+    for (const px of zhSizes) {
+      const rf = cjkAt(large, px);
+      const ls = wrapText(rf, senses.slice(0, n).join("；"), tw - posW);
+      if (ls.length <= (px === zhSizes[zhSizes.length - 1] ? 3 : 2) && ls.length * zhLH(rf) <= zhRoom) {
+        zhF = rf; zhLines = ls;
+        break search;
+      }
+    }
+  }
 
   // section heights, then the free height shared between them
-  const exLH = Math.round(fh(exF) * 1.3), exZhLH = Math.round(fh(exZhF) * 1.35);
   const sec = [
     fh(wordF),                                                       // word
     w.ipa ? fh(ipaF) : 0,                                           // /ipa/
-    zhLines.length * Math.round(fh(zhF) * 1.25),                    // pos + meaning
-    exLines.length ? exLines.length * exLH + exZhLines.length * exZhLH + (large ? 18 : 10) : 0, // example
+    zhLines.length * zhLH(zhF),                                     // pos + meaning
+    exH,                                                            // example
   ];
-  const reviewH = prevWords.length ? (large ? 40 : 24) : 0;
-  const avail = H - f.top - reviewH - (large ? 12 : 6);
   const used = sec.reduce((a, b) => a + b, 0);
   const gaps = sec.filter((h) => h > 0).length + 1;
   const gap = Math.max(large ? 10 : 4, Math.min(large ? 40 : 18, Math.floor((avail - used) / gaps)));
@@ -118,7 +146,7 @@ export function renderWords(panel: Panel, ctx: ScreenContext) {
   }
 
   // part of speech (red) + Chinese meaning
-  const zLH = Math.round(fh(zhF) * 1.25);
+  const zLH = zhLH(zhF);
   y += zhF.ascent;
   if (w.pos) print(c, posF, w.pos, x0, y, Ink.Red);
   zhLines.forEach((l, k) => print(c, zhF, l, x0 + posW, y + k * zLH, Ink.Black));
