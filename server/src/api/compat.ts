@@ -4,7 +4,7 @@ import { Hono } from "hono";
 import { type Db, getDevice, registerDevice, touchDevice } from "../db.js";
 import { matchPanel } from "../panels.js";
 import { genericPanel } from "../frames.js";
-import { refreshMinutes } from "../schedule.js";
+import { refreshMinutes, nextWakeUnix } from "../schedule.js";
 import { frameFor } from "../deviceFrame.js";
 import { getSettings } from "../data/devices.js";
 import { holidayOf, loadedHolidayYears } from "../data/calendar.js";
@@ -91,9 +91,14 @@ export function compatRoutes(db: Db, opts: AppOptions): Hono {
     const { frame, settings } = await frameFor(db, device, panel, now, {
       advance: true, prefer2bpp: bpp >= 2, ctx: { mac: device.mac, batteryV, rssi, requestNo: device.requests },
     });
+    const schedule = settings?.schedule ?? opts.schedule;
     const headers = {
       "Content-Type": frame.contentType,
-      "X-Refresh-Minutes": String(refreshMinutes(now, settings?.schedule ?? opts.schedule)),
+      // minutes until the next wake, for InkSight firmware (it sleeps that long)
+      "X-Refresh-Minutes": String(refreshMinutes(now, schedule)),
+      // the same wake as a point in time (Unix s), for ours: it sleeps until then, so the
+      // time spent downloading and refreshing does not push it late
+      "X-Next-Wake": String(nextWakeUnix(now, schedule)),
       "X-Mode-Id": frame.modeId,
       // The frame's fingerprint, before the body: the device skips an unchanged frame
       // (304, no download / refresh) and knows whether a message frame is new.

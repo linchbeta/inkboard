@@ -695,8 +695,9 @@ static bool fetchFrame(bool nextMode, bool *isFallback, String *renderedModeIdOu
         http.setReuse(false);
         http.setTimeout(HTTP_TIMEOUT);
         http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
-        const char *headerKeys[] = {"X-Content-Fallback", "X-Refresh-Minutes", "X-Mode-Id", "Date", "ETag"};
-        http.collectHeaders(headerKeys, 5);
+        const char *headerKeys[] = {"X-Content-Fallback", "X-Refresh-Minutes", "X-Mode-Id", "Date", "ETag",
+                                    "X-Next-Wake"};
+        http.collectHeaders(headerKeys, 6);
 
         http.addHeader("Accept-Encoding", "identity");
         http.addHeader("Connection", "close");
@@ -726,9 +727,13 @@ static bool fetchFrame(bool nextMode, bool *isFallback, String *renderedModeIdOu
                 Serial.println("[RENDER] Received fallback content");
             }
         }
+        // Our server names the next wake as a time; X-Refresh-Minutes is then only the
+        // countdown to it (for InkSight firmware), not an interval to keep.
+        long long nextWake = strtoll(http.header("X-Next-Wake").c_str(), nullptr, 10);
+        if (nextWake > 0) setNextWake((time_t)nextWake);
         String refreshHeader = http.header("X-Refresh-Minutes");
         int serverRefreshMin = refreshHeader.toInt();
-        if (serverRefreshMin >= 10 && serverRefreshMin <= 1440 && serverRefreshMin != cfgSleepMin) {
+        if (nextWake <= 0 && serverRefreshMin >= 10 && serverRefreshMin <= 1440 && serverRefreshMin != cfgSleepMin) {
             saveSleepMin(serverRefreshMin);
             Serial.printf("[RENDER] Applied refresh interval: %d min\n", serverRefreshMin);
         }

@@ -101,7 +101,7 @@ npx tsc --noEmit -p .  # 类型检查
 | `POST /api/device/{mac}/claim-token` | 设备上报配网时生成的配对码 |
 | `POST /api/device/{mac}/heartbeat` | 上报电压和信号 |
 | `GET /api/config/{mac}` | 是否保持常亮（实时模式） |
-| `GET /api/render?...` | 取一帧画面（2bpp 或 1 位 BMP）。响应头带 `X-Refresh-Minutes`、`X-Mode-Id` 和 `ETag`，请求带了相同的 `If-None-Match` 就回 304 |
+| `GET /api/render?...` | 取一帧画面（2bpp 或 1 位 BMP）。响应头带 `X-Refresh-Minutes`（离下次唤醒还有几分钟，给 InkSight 固件用）、`X-Next-Wake`（下次唤醒的时刻，Unix 秒数，现在的固件用它）、`X-Mode-Id` 和 `ETag`，请求带了相同的 `If-None-Match` 就回 304 |
 | `GET /api/holidays/{year}` | 给离线日历用的节假日，每行 `YYYYMMDD 1`（休）或 `YYYYMMDD 2`（班），包括前一年 12 月；还没公布时返回 404 |
 | `POST /api/v1/register`、`GET /api/v1/frame` | v1 协议，一次请求一帧，内容没变返回 304 |
 | `GET /healthz` | 健康检查 |

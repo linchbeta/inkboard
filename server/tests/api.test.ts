@@ -4,7 +4,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { openDb } from "../src/db.js";
 import { createApp } from "../src/app.js";
-import { sleepSeconds, refreshMinutes } from "../src/schedule.js";
+import { sleepSeconds, refreshMinutes, nextWakeUnix } from "../src/schedule.js";
 
 const MAC = "12:34:56:AB:CD:02";
 const fixedNow = () => new Date(2026, 9, 2, 10, 7, 30); // 2026-10-02 10:07:30 local
@@ -47,6 +47,8 @@ test("compat: full firmware sequence (token, pair, heartbeat, config, render)", 
   assert.equal((await r398.arrayBuffer()).byteLength, 105984);
   const refresh = Number(r398.headers.get("X-Refresh-Minutes"));
   assert.ok(refresh >= 10 && refresh <= 1440, `X-Refresh-Minutes ${refresh}`);
+  // 10:07:30 -> the 10:15 boundary
+  assert.equal(r398.headers.get("X-Next-Wake"), String(new Date(2026, 9, 2, 10, 15).getTime() / 1000));
   assert.equal(r398.headers.get("X-Mode-Id"), "DATECARD"); // a new device's default playlist
 
   // the same frame again with its ETag: 304, no body (no download, no refresh)
@@ -58,6 +60,7 @@ test("compat: full firmware sequence (token, pair, heartbeat, config, render)", 
   assert.equal((await again.arrayBuffer()).byteLength, 0);
   assert.equal(again.headers.get("X-Mode-Id"), "DATECARD");
   assert.ok(Number(again.headers.get("X-Refresh-Minutes")) >= 10);
+  assert.equal(again.headers.get("X-Next-Wake"), r398.headers.get("X-Next-Wake"));
   const changed = await req(`/api/render?v=4.13&mac=${MAC}&rssi=-42&refresh_min=10&w=768&h=552&bpp=2&colors=4`,
     { headers: { ...auth, "If-None-Match": '"stale"' } });
   assert.equal(changed.status, 200);
@@ -114,6 +117,8 @@ test("schedule: day every 15 min aligned, night 120 min, never past day start", 
   assert.equal(sleepSeconds(at(23, 0)), 60 * 60 + 5);            // night step -> 00:00
   assert.equal(sleepSeconds(at(6, 30)), 30 * 60 + 5);            // -> 07:00 day start
   assert.equal(refreshMinutes(at(10, 14, 30)), 10);              // firmware minimum
+  assert.equal(nextWakeUnix(at(21, 50)), at(22, 0).getTime() / 1000);
+  assert.equal(nextWakeUnix(at(10, 14, 30)), at(10, 15).getTime() / 1000);
 });
 
 test("test date: screens draw that day as today; clearing restores the real date", async () => {

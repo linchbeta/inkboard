@@ -31,6 +31,7 @@ RTC_DATA_ATTR static int64_t s_savedClock = 0;       // last time written to NVS
 RTC_DATA_ATTR static int32_t s_holidaysCheckedYmd = 0;
 RTC_DATA_ATTR static uint8_t s_offlineCount = 0;     // wakes in a row without the server
 static bool s_syncedThisBoot = false;
+static time_t s_nextWake = 0;  // from the server this boot (X-Next-Wake), 0 = none
 
 
 // LittleFS.exists() / open() log an error for a missing file in this core; stat() does not.
@@ -219,13 +220,26 @@ uint32_t secondsUntilNextDay() {
     return left + 60 + (uint32_t)(left * 0.003);
 }
 
+void setNextWake(time_t unix) { s_nextWake = unix; }
+
 uint32_t alignedSleepSeconds(int minutes) {
+    const uint32_t LAG = 30;  // after the boundary: the clock and the timer are a few s off
     uint32_t plain = (uint32_t)minutes * 60U;
-    if (!s_synced || minutes <= 0) return plain;
     time_t now = time(nullptr);
+    // The server's schedule (day / night steps, day start) wins. Its X-Refresh-Minutes is a
+    // countdown for InkSight firmware, not an interval, so it must not be aligned again.
+    if (s_synced && s_nextWake > 0) {
+        int64_t wait = (int64_t)s_nextWake - now + LAG;
+        if (wait <= 2 * 86400) {
+            // past the boundary already (a slow refresh): wake shortly for the next frame
+            if (wait < (int64_t)LAG) wait = LAG;
+            Serial.printf("[SLEEP] until the server's next wake (+%us)\n", (unsigned)LAG);
+            return (uint32_t)wait;
+        }
+    }
+    if (!s_synced || minutes <= 0) return plain;
     struct tm lt;
     localtime_r(&now, &lt);
-    const uint32_t LAG = 30;  // after the boundary: the clock and the timer are a few s off
     uint32_t sod = lt.tm_hour * 3600 + lt.tm_min * 60 + lt.tm_sec;
     uint32_t step = plain;
     uint32_t next = (sod >= LAG ? (sod - LAG) / step + 1 : 0) * step + LAG;  // next boundary + LAG after now

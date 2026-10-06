@@ -61,7 +61,10 @@ uint32_t secondsUntilNextDay();
 // of the interval counted from midnight (15 -> :00 :15 :30 :45, 120 -> even hours), plus a
 // little so the wake is never early. A wake due very soon moves to the following one.
 // Without a synced clock: plain minutes * 60.
+// If the server named the next wake this boot (setNextWake), it sleeps until then instead.
 uint32_t alignedSleepSeconds(int minutes);
+// The server's next wake (X-Next-Wake, Unix s), for this boot's sleep.
+void setNextWake(time_t unix);
 // Before deep sleep: the device-timer duration for `seconds` real seconds (drift
 // compensated), and remembers the sleep start for the correction at wake.
 uint64_t clockSleepMicros(uint32_t seconds);
