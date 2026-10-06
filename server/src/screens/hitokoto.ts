@@ -38,7 +38,9 @@ export function renderHitokoto(panel: Panel, ctx: ScreenContext) {
   const textX = m + (large ? 50 : 26), textW = W - m - textX;
   const top = f.top + (large ? 24 : 14);
   const area = srcTop - (large ? 20 : 10) - top;
-  const fonts: RefFont[] = [...cjkDisplay(large, large ? 40 : 32), wqy12, wqy9];
+  // (at most 32 px on the 5.83" / 7.5": 40 there comes out 1.7x the 3.98"'s, see Panel.ppi)
+  const dense = large && (panel.ppi ?? 130) >= 200;
+  const fonts: RefFont[] = [...cjkDisplay(large, dense ? 40 : 32), wqy12, wqy9];
   const font = fonts.find((rf) => wrapText(rf, q.text, textW).length * lineH(rf) <= area) ?? fonts[fonts.length - 1];
   const lh = lineH(font);
   const lines = wrapText(font, q.text, textW, Math.max(1, Math.floor(area / lh)));

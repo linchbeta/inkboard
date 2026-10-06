@@ -129,7 +129,7 @@ export function renderPoetry(panel: Panel, ctx: ScreenContext) {
   const maxW = W - 2 * m - 2 * pad, maxH = H - f.top - 2 * pad;
   const L = plan(poem, large, maxW, maxH);
   const cx = Math.round(W / 2);
-  let y = f.top + pad + Math.max(0, Math.round((maxH - L.h) / 2));
+  let y = f.top + pad + Math.max(0, Math.round((maxH - L.h) / 3));
 
   // title (red) and "朝代 · 作者" with short red rules either side
   y += L.title.ascent;
