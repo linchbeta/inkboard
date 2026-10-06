@@ -1373,7 +1373,7 @@ void setup() {
 #if DEBUG_MODE
         Serial.printf("[DEBUG] Boot complete, entering deep sleep for %d min\n", DEBUG_REFRESH_MIN);
 #else
-        Serial.printf("Boot complete, entering deep sleep for %d min\n", cfgSleepMin);
+        Serial.println("Boot complete, entering deep sleep");  // (how long: "Deep sleep for")
 #endif
         enterDeepSleep(effectiveSleepMinutes());
     }
@@ -1678,7 +1678,15 @@ static void enterDeepSleepSeconds(uint32_t seconds, bool force) {
     WiFi.mode(WIFI_OFF);
     epdSleep();
     ledFeedback("off");
-    Serial.printf("Deep sleep for %u min %u s (~%duA)\n", (unsigned)(seconds / 60), (unsigned)(seconds % 60), 5);
+    if (clockSyncedSincePowerOn()) {
+        time_t wake = time(nullptr) + seconds;
+        struct tm lt;
+        localtime_r(&wake, &lt);
+        Serial.printf("Deep sleep for %u min %u s, wake at %02d:%02d:%02d (~%duA)\n", (unsigned)(seconds / 60),
+                      (unsigned)(seconds % 60), lt.tm_hour, lt.tm_min, lt.tm_sec, 5);
+    } else {
+        Serial.printf("Deep sleep for %u min %u s (~%duA)\n", (unsigned)(seconds / 60), (unsigned)(seconds % 60), 5);
+    }
     Serial.flush();
     {
         struct timeval tv;
