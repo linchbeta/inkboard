@@ -130,12 +130,36 @@ static void se0398Init() {
 #else
     epdSendCommand(0x00);   // PSR
     epdSendData(0x0B);
+#if defined(SE0398_PSR2)
+    // 2nd PSR byte (JD79660 datasheet 8.2.1; otherwise the panel's MTP preset, usually 0x09):
+    // bit5 FOPT=1 skips the extra frame scanned after the waveform, sources then Hi-Z
+    epdSendData(SE0398_PSR2);
+#endif
 
     epdSendCommand(0x61);   // TRES: resolution
     epdSendData(W >> 8);
     epdSendData(W & 0xFF);
     epdSendData(H >> 8);
     epdSendData(H & 0xFF);
+#if defined(SE0398_VDCS)
+    // VCOM DC (8.2.23): 0x00 = 0 V, each step -0.05 V (0x1E -1.5 V, 0x28 -2.0 V); otherwise
+    // the value the panel maker programmed into the MTP. Not written to the MTP.
+    epdSendCommand(0x82);
+    epdSendData(SE0398_VDCS);
+#endif
+#if defined(SE0398_PSR2) || defined(SE0398_VDCS)
+    Serial.printf("[EPD-SE0398] test settings: PSR2=0x%02X VDCS=0x%02X\n",
+#if defined(SE0398_PSR2)
+                  SE0398_PSR2,
+#else
+                  0xFF,
+#endif
+#if defined(SE0398_VDCS)
+                  SE0398_VDCS);
+#else
+                  0xFF);
+#endif
+#endif
 #endif
 }
 

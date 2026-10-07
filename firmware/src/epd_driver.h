@@ -40,8 +40,10 @@ void epdDisplay2bppPaged(const char *path);
 #if defined(EPD_PANEL_398_SE0398NZ07A0)
 // Two versions of the panel: A0 (JD79660, the default) and A1 (JD79661, build with
 // -DSE0398_A1). Same 2bpp data; A1 needs a long init and takes the frame in order.
-// DRF (display refresh) parameter: A0 0x00 (verified on A0 hardware; the EPD-nRF5
-// reference sends 0x01 -- compare with -DSE0398_DRF_PARAM=0x01), A1 0x01 as the reference.
+// DRF (display refresh) parameter: A0 0x00, A1 0x01 as the EPD-nRF5 reference. The JD79660
+// datasheet (8.2.9) marks every bit of it "don't care", so 0x00 and 0x01 refresh the same.
+// Panel tuning for tests (A0, off by default): -DSE0398_PSR2=0x.. (2nd PSR byte, e.g. 0x29
+// = the MTP default 0x09 + FOPT) and -DSE0398_VDCS=0x.. (VCOM DC, 0.05 V steps below 0 V).
 #ifndef SE0398_DRF_PARAM
 #if defined(SE0398_A1)
 #define SE0398_DRF_PARAM 0x01
