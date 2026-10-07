@@ -141,8 +141,86 @@ def layout_480(W, m):
         "foot": 384, "hint1": 418, "hint2": 450})
 
 
+def wrap(font, text, maxw):
+    """Lines of at most maxw px, broken between characters (never before a closing mark)."""
+    lines, cur = [], ""
+    for ch in text:
+        if cur and font.width(cur + ch) > maxw and ch not in "，。、；：）":
+            lines.append(cur.rstrip())
+            cur = ch.lstrip()
+        else:
+            cur += ch
+    return lines + [cur] if cur else lines
+
+
+def design_portrait(W, H, m, f, sz):
+    """The same screen upright: each step's number beside its label, the value under them,
+    the hints wrapped; the free height shared between the parts."""
+    img = Image.new("1", (W, H), 1)
+    d = ImageDraw.Draw(img)
+    title, label, big, num, hint, brand = (Bdf(f[k]) for k in ("title", "label", "big", "num", "hint", "brand"))
+    head = m + title.ascent + sz["icon"] // 2
+    wifi_icon(d, m + sz["icon"], head - sz["icon"] // 3, sz["icon"] // 3, sz["iconw"])
+    title.draw(img, "WiFi 设置", m + sz["icon"] * 2 + sz["gap"], head)
+    brand.draw(img, "InkBoard", W - m - brand.width("InkBoard"), head)
+    rule = head + sz["rulegap"]
+    d.rectangle((m, rule, W - m, rule + sz["line"] - 1), fill=0)
+
+    widest = big.width("InkBoard-") + 4 * max(big.glyphs[ord(c)]["adv"] for c in "0123456789ABCDEF")
+    assert widest + 2 * sz["pad"] <= W - 2 * m, f"{W}x{H}: pill too wide"
+    hints = wrap(hint, "10 分钟内有效。短按 BOOT 跳过，只显示日历", W - 2 * m) + \
+        wrap(hint, "以后要重新设置：按 RESET 后按住 BOOT，直到指示灯常亮", W - 2 * m)
+    stepH = num.ascent + sz["vgap"] + sz["pillh"]
+    footH = sz["hintlh"] * len(hints) + sz["hintlh"] // 2
+    free = H - m - (rule + sz["line"]) - 2 * stepH - footH
+    assert free > 0, f"{W}x{H}: too tall"
+    g = free / 4
+    y = rule + sz["line"] + g
+    name_x = name_base = 0
+    for n, lab in enumerate(("手机连接这个 WiFi 热点", "然后用浏览器打开"), 1):
+        base = round(y) + num.ascent
+        nx = num.draw(img, str(n), m, base)
+        label.draw(img, lab, nx + sz["gap"] * 2, base - sz["labeldrop"])
+        vtop = base + sz["vgap"]
+        if n == 1:
+            d.rounded_rectangle((m, vtop, m + widest + 2 * sz["pad"], vtop + sz["pillh"]), sz["pillh"] // 2, fill=0)
+            name_x, name_base = m + sz["pad"], vtop + (sz["pillh"] + big.ascent) // 2 - sz["nudge"]
+        else:
+            big.draw(img, "192.168.4.1", m, vtop + (sz["pillh"] + big.ascent) // 2 - sz["nudge"])
+        y += stepH + g
+    foot = round(y + g / 2)
+    d.rectangle((m, foot, W - m, foot), fill=0)
+    for i, text in enumerate(hints):
+        hint.draw(img, text, m, foot + sz["hintlh"] * (i + 1))
+    return img, big, name_x, name_base
+
+
+def portrait_398():
+    return design_portrait(552, 768, 40, {
+        "title": "lxgw-wenkai-32px.bdf.gz", "label": "lxgw-wenkai-28px.bdf.gz", "big": "inter-medium-48px.bdf.gz",
+        "num": "barlow-condensed-bold-72px.bdf.gz", "hint": "lxgw-wenkai-20px.bdf.gz", "brand": "inter-medium-24px.bdf.gz",
+    }, {"icon": 24, "iconw": 4, "gap": 8, "rulegap": 24, "line": 3, "vgap": 22, "pillh": 74, "pad": 24,
+        "nudge": 2, "labeldrop": 8, "hintlh": 32})
+
+
+def portrait_42():
+    return design_portrait(300, 400, 14, {
+        "title": "lxgw-wenkai-20px.bdf.gz", "label": "lxgw-wenkai-20px.bdf.gz", "big": "inter-medium-24px.bdf.gz",
+        "num": "barlow-condensed-bold-44px.bdf.gz", "hint": "wqy-bitmapsong-12px.subset.bdf", "brand": "inter-medium-20px.bdf.gz",
+    }, {"icon": 13, "iconw": 2, "gap": 4, "rulegap": 12, "line": 2, "vgap": 10, "pillh": 40, "pad": 12,
+        "nudge": 1, "labeldrop": 6, "hintlh": 20})
+
+
+def portrait_480(H, m):
+    return design_portrait(480, H, m, {
+        "title": "lxgw-wenkai-28px.bdf.gz", "label": "lxgw-wenkai-24px.bdf.gz", "big": "inter-medium-32px.bdf.gz",
+        "num": "barlow-condensed-bold-56px.bdf.gz", "hint": "lxgw-wenkai-20px.bdf.gz", "brand": "inter-medium-24px.bdf.gz",
+    }, {"icon": 18, "iconw": 3, "gap": 6, "rulegap": 18, "line": 2, "vgap": 16, "pillh": 56, "pad": 18,
+        "nudge": 2, "labeldrop": 6, "hintlh": 30})
+
+
 def pack(img):
-    """imgBuf layout: 1 bit per pixel, MSB first, 1 = white."""
+    """imgBuf layout: 1 bit per pixel, MSB first, 1 = white; rows padded to whole bytes."""
     W, H = img.size
     px = img.load()
     out = bytearray()
@@ -150,7 +228,7 @@ def pack(img):
         for x0 in range(0, W, 8):
             b = 0
             for k in range(8):
-                b = b << 1 | (1 if px[x0 + k, y] else 0)
+                b = b << 1 | (1 if x0 + k >= W or px[x0 + k, y] else 0)
             out.append(b)
     return bytes(out)
 
@@ -172,38 +250,43 @@ def c_array(name, data):
     return f"static const uint8_t {name}[] = {{\n  " + ",\n  ".join(lines) + "\n};\n"
 
 
-def emit(tag, cond, img, font, name_x, base):
+def emit(tag, img, font, name_x, base, p=""):
+    """The image and its name glyphs as C arrays; p = "P_" for the upright one."""
     raw = pack(img)
     co = zlib.compressobj(9, zlib.DEFLATED, -15)          # raw deflate, as tinfl expects without a zlib header
     z = co.compress(raw) + co.flush()
     entries, gdata = glyph_table(font)
-    s = f"#if {cond}\n"
-    s += f"// {img.width}x{img.height}: {len(raw)} bytes -> {len(z)} deflated; name glyphs {len(gdata)} bytes\n"
-    s += c_array("SETUP_SCREEN_Z", z)
-    s += f"static const uint32_t SETUP_SCREEN_RAW_LEN = {len(raw)};\n"
-    s += c_array("SETUP_GLYPH_BITS", gdata)
-    s += f'static const char SETUP_CHARS[] = "{CHARS}";\n'
-    s += "// per character of SETUP_CHARS: offset into SETUP_GLYPH_BITS, advance, width, height, x offset, y offset (BDF)\n"
-    s += f"static const int16_t SETUP_GLYPHS[{len(CHARS)}][6] = {{\n  " + ",\n  ".join("{" + ", ".join(map(str, e)) + "}" for e in entries) + "\n};\n"
-    s += f"static const int SETUP_NAME_X = {name_x}, SETUP_NAME_BASE = {base};  // the hotspot name: white, on the pill\n"
-    s += "#define HAVE_SETUP_SCREEN 1\n#endif\n\n"
-    print(f"{tag}: {len(raw)} -> {len(z)} bytes deflated, glyphs {len(gdata)} bytes")
+    s = f"// {img.width}x{img.height}: {len(raw)} bytes -> {len(z)} deflated; name glyphs {len(gdata)} bytes\n"
+    s += c_array(f"SETUP_{p}SCREEN_Z", z)
+    s += f"static const uint32_t SETUP_{p}SCREEN_RAW_LEN = {len(raw)};\n"
+    if p:
+        s += f"static const int SETUP_{p}W = {img.width}, SETUP_{p}H = {img.height};  // rows of (W + 7) / 8 bytes\n"
+    s += c_array(f"SETUP_{p}GLYPH_BITS", gdata)
+    if not p:
+        s += f'static const char SETUP_CHARS[] = "{CHARS}";\n'
+    s += f"// per character of SETUP_CHARS: offset into SETUP_{p}GLYPH_BITS, advance, width, height, x offset, y offset (BDF)\n"
+    s += f"static const int16_t SETUP_{p}GLYPHS[{len(CHARS)}][6] = {{\n  " + ",\n  ".join("{" + ", ".join(map(str, e)) + "}" for e in entries) + "\n};\n"
+    s += f"static const int SETUP_{p}NAME_X = {name_x}, SETUP_{p}NAME_BASE = {base};  // the hotspot name: white, on the pill\n"
+    print(f"{tag}{' upright' if p else ''}: {len(raw)} -> {len(z)} bytes deflated, glyphs {len(gdata)} bytes")
     return s
 
 
 def main():
     preview = sys.argv[1] if len(sys.argv) > 1 else None
     out = "// Generated by tools/make_setup_screen.py -- do not edit.\n#pragma once\n#include <stdint.h>\n\n"
-    for tag, cond, fn in (("3.98", "EPD_WIDTH == 768 && EPD_HEIGHT == 552", layout_398),
-                          ("4.2", "EPD_WIDTH == 400 && EPD_HEIGHT == 300", layout_42),
-                          ("5.83", "EPD_WIDTH == 648 && EPD_HEIGHT == 480", lambda: layout_480(648, 28)),
-                          ("7.5", "EPD_WIDTH == 800 && EPD_HEIGHT == 480", lambda: layout_480(800, 40))):
-        img, font, name_x, base = fn()
-        out += emit(tag, cond, img, font, name_x, base)
-        if preview:
-            demo = img.copy()
-            font.draw(demo, "InkBoard-C634", name_x, base, color=1)
-            demo.convert("L").save(os.path.join(preview, f"setup_{tag}.png"))
+    for tag, cond, fn, fp in (("3.98", "EPD_WIDTH == 768 && EPD_HEIGHT == 552", layout_398, portrait_398),
+                              ("4.2", "EPD_WIDTH == 400 && EPD_HEIGHT == 300", layout_42, portrait_42),
+                              ("5.83", "EPD_WIDTH == 648 && EPD_HEIGHT == 480", lambda: layout_480(648, 28), lambda: portrait_480(648, 24)),
+                              ("7.5", "EPD_WIDTH == 800 && EPD_HEIGHT == 480", lambda: layout_480(800, 40), lambda: portrait_480(800, 28))):
+        out += f"#if {cond}\n"
+        for p, f in (("", fn), ("P_", fp)):
+            img, font, name_x, base = f()
+            out += emit(tag, img, font, name_x, base, p)
+            if preview:
+                demo = img.copy()
+                font.draw(demo, "InkBoard-C634", name_x, base, color=1)
+                demo.convert("L").save(os.path.join(preview, f"setup_{tag}{'_upright' if p else ''}.png"))
+        out += "#define HAVE_SETUP_SCREEN 1\n#define HAVE_SETUP_SCREEN_UPRIGHT 1\n#endif\n\n"
     open(OUT, "w", encoding="utf-8", newline="\n").write(out)
 
 

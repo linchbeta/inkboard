@@ -9,6 +9,9 @@ g++ -O2 -o caltest.exe tools\calendar_test\main.cpp src\calendar_render.cpp
 cd ..\server; npx tsx ..\firmware\tools\calendar_test\expected.ts 2025 2074 > ..\firmware\expected.txt
 ```
 
+再加一个方向参数（`landscape`、`portrait`、`landscape-flip`、`portrait-flip`，默认横向）就比较那个方向的画面，
+例如 `.\caltest.exe 2025 2030 all portrait` 和 `npx tsx ...expected.ts 2025 2030 all portrait`；只比我们两块屏时第三个参数写 `ours`。
+
 两边命令末尾加 `all` 会覆盖固件里所有有日历的屏（4.2" 黑白黄红、5.83" / 7.5" 三色，以及 4.2" / 5.83" / 7.5" 黑白），
 例如 `.\caltest.exe 2025 2034 all`。设备端每一帧都画两遍：整帧一次、按 24 行一段（逐行写屏的屏就是这样画的）一次，
 两者不同时输出 `BANDS DIFFER`。

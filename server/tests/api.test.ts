@@ -49,7 +49,8 @@ test("compat: full firmware sequence (token, pair, heartbeat, config, render)", 
   assert.ok(refresh >= 10 && refresh <= 1440, `X-Refresh-Minutes ${refresh}`);
   // 10:07:30 -> the 10:15 boundary
   assert.equal(r398.headers.get("X-Next-Wake"), String(new Date(2026, 9, 2, 10, 15).getTime() / 1000));
-  assert.equal(r398.headers.get("X-Mode-Id"), "DATECARD"); // a new device's default playlist
+  assert.equal(r398.headers.get("X-Mode-Id"), "DATECARD");
+  assert.equal(r398.headers.get("X-Orientation"), "0"); // a new device's default playlist
 
   // the same frame again with its ETag: 304, no body (no download, no refresh)
   const etag = r398.headers.get("ETag")!;

@@ -175,18 +175,48 @@ static void fillRect(int x, int y, int w, int h) {
 #include "rom/miniz.h"
 #include <stdlib.h>
 
-// The setup screen (tools/make_setup_screen.py): inflate the static image with the ROM's
-// tinfl, then draw the hotspot name in white on its black pill.
-static bool drawDesignedSetupScreen(const char *apName) {
+static bool inflateImage(const uint8_t *in, size_t inSize, uint8_t *out, size_t outSize) {
     tinfl_decompressor *z = (tinfl_decompressor *)malloc(sizeof(tinfl_decompressor));  // ~11 KB: not on the stack
     if (!z) return false;
     tinfl_init(z);
-    size_t inLen = sizeof(SETUP_SCREEN_Z), outLen = IMG_BUF_LEN;
-    tinfl_status st = tinfl_decompress(z, SETUP_SCREEN_Z, &inLen, imgBuf, imgBuf, &outLen,
-                                       TINFL_FLAG_USING_NON_WRAPPING_OUTPUT_BUF);
+    size_t inLen = inSize, outLen = outSize;
+    tinfl_status st = tinfl_decompress(z, in, &inLen, out, out, &outLen, TINFL_FLAG_USING_NON_WRAPPING_OUTPUT_BUF);
     free(z);
-    if (st != TINFL_STATUS_DONE || outLen != SETUP_SCREEN_RAW_LEN) return false;
+    return st == TINFL_STATUS_DONE && outLen == outSize;
+}
+
+// The setup screen (tools/make_setup_screen.py): inflate the static image with the ROM's
+// tinfl, then draw the hotspot name in white on its black pill. The way the screen stands
+// (screenRotation): upright, the upright image turned into the panel's orientation (as the
+// server turns its frames, render/orient.ts); upside down, the image turned half way.
+static bool drawDesignedSetupScreen(const char *apName) {
+    const int rot = screenRotation();
+#if defined(HAVE_SETUP_SCREEN_UPRIGHT)
+    if (rot & 1) {
+        const int pw = SETUP_P_W, ph = SETUP_P_H, prb = (pw + 7) / 8;  // pw == H, ph == W
+        uint8_t *up = (uint8_t *)malloc(SETUP_P_SCREEN_RAW_LEN);
+        if (!up) return false;
+        if (!inflateImage(SETUP_P_SCREEN_Z, sizeof(SETUP_P_SCREEN_Z), up, SETUP_P_SCREEN_RAW_LEN)) { free(up); return false; }
+        setupDrawNameWith(up, pw, ph, apName, SETUP_P_GLYPH_BITS, SETUP_P_GLYPHS, SETUP_P_NAME_X, SETUP_P_NAME_BASE);
+        for (int y = 0; y < H; y++)
+            for (int x = 0; x < W; x++) {
+                // panel (x, y) shows upright (u, v): a quarter counter-clockwise (y, W-1-x), clockwise (H-1-y, x)
+                const int u = rot == 1 ? y : H - 1 - y, v = rot == 1 ? W - 1 - x : x;
+                const bool white = up[v * prb + u / 8] & (0x80 >> (u % 8));
+                uint8_t &b = imgBuf[y * ROW_BYTES + x / 8];
+                const uint8_t mask = (uint8_t)(0x80 >> (x % 8));
+                b = white ? (uint8_t)(b | mask) : (uint8_t)(b & ~mask);
+            }
+        free(up);
+        return true;
+    }
+#endif
+    if (!inflateImage(SETUP_SCREEN_Z, sizeof(SETUP_SCREEN_Z), imgBuf, SETUP_SCREEN_RAW_LEN)) return false;
     setupDrawName(imgBuf, W, H, apName);
+    if (rot == 2) {  // upside down: the bytes in reverse order, each byte's bits too (W is a multiple of 8)
+        auto rev = [](uint8_t v) { v = (uint8_t)((v & 0xF0) >> 4 | (v & 0x0F) << 4); v = (uint8_t)((v & 0xCC) >> 2 | (v & 0x33) << 2); return (uint8_t)((v & 0xAA) >> 1 | (v & 0x55) << 1); };
+        for (int i = 0, j = IMG_BUF_LEN - 1; i <= j; i++, j--) { const uint8_t a = rev(imgBuf[i]); imgBuf[i] = rev(imgBuf[j]); imgBuf[j] = a; }
+    }
     return true;
 }
 #endif

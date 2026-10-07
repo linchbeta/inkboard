@@ -272,6 +272,31 @@ void setCalendarOnly(bool on) {
     Serial.printf("[CAL] calendar-only mode %s\n", on ? "on" : "off");
 }
 
+// ── orientation ─────────────────────────────────────────────
+
+RTC_DATA_ATTR static int8_t s_rot = -1;  // -1: not read from NVS yet
+
+int screenRotation() {
+    if (s_rot < 0) {
+        Preferences p;
+        p.begin(NVS_NS, false);  // (read-write: creates the namespace on first use, no write)
+        s_rot = (int8_t)p.getUChar("rot", 0);
+        p.end();
+        if (s_rot > 3) s_rot = 0;
+    }
+    return s_rot;
+}
+
+void setScreenRotation(int rot) {
+    if (rot < 0 || rot > 3 || rot == screenRotation()) return;
+    Preferences p;
+    p.begin(NVS_NS, false);
+    p.putUChar("rot", (uint8_t)rot);
+    p.end();
+    s_rot = (int8_t)rot;
+    Serial.printf("[CAL] orientation %d\n", rot);
+}
+
 // ── 2bpp frame in RAM ───────────────────────────────────────
 
 #if !(EPD_BPP >= 2 && !defined(EPD_COLOR_PAGED))
@@ -396,7 +421,7 @@ static bool drawCalendar(int32_t ymd, float batteryV) {
     unsigned long t0 = millis();
     for (int y0 = 0; y0 < H; y0 += BAND) {
         const int rows = H - y0 < BAND ? H - y0 : BAND;
-        CalTarget t = {W, H, LOCAL_CALENDAR_CODES, band, y0, rows, 2};
+        CalTarget t = {W, H, LOCAL_CALENDAR_CODES, band, y0, rows, 2, screenRotation()};
         calendarRender(t, y, m, d, batteryV);
         for (int r = 0; r < rows; r++) epdStreamWriteRow(y0 + r, band + r * rowBytes);
     }
@@ -404,13 +429,13 @@ static bool drawCalendar(int32_t ymd, float batteryV) {
     Serial.printf("[CAL] drawn in %d-row bands, %lu ms\n", BAND, millis() - t0);
     epdStreamEnd();
 #elif LOCAL_CALENDAR_BPP == 1
-    CalTarget t = {W, H, LOCAL_CALENDAR_CODES, imgBuf, 0, 0, 1};
+    CalTarget t = {W, H, LOCAL_CALENDAR_CODES, imgBuf, 0, 0, 1, screenRotation()};
     calendarRender(t, y, m, d, batteryV);
     epdDisplay(imgBuf);
 #else
     uint8_t *buf = frameRam2bpp();
     if (!buf) return false;
-    CalTarget t = {W, H, LOCAL_CALENDAR_CODES, buf, 0, 0, 2};
+    CalTarget t = {W, H, LOCAL_CALENDAR_CODES, buf, 0, 0, 2, screenRotation()};
     calendarRender(t, y, m, d, batteryV);
     epdDisplay2bpp(buf);
 #endif

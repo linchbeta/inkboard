@@ -12,12 +12,23 @@ namespace {
 // ── canvas (render/canvas.ts) on a 2bpp buffer ─────────────────────────────
 
 const CalTarget *T;
-int bandY0, bandY1;  // the frame rows the target buffer holds
+int bandY0, bandY1;  // the frame rows the target buffer holds (the panel's own rows)
+int LW, LH;          // the upright size the calendar is laid out at
+int cx0, cy0, cx1, cy1;  // the part of the upright picture that lands in the band
 
 int jsRound(double v) { return (int)floor(v + 0.5); }  // Math.round
+const double JS_PI = 3.141592653589793;                  // Math.PI
 
+// (x, y) upright -> the panel's own pixel (toNative in server/src/render/orient.ts)
 void set(int x, int y, int ink) {
-    if (x < 0 || y < bandY0 || x >= T->width || y >= bandY1) return;
+    if (x < cx0 || y < cy0 || x >= cx1 || y >= cy1) return;
+    switch (T->rot) {
+        case 1: { int t = x; x = T->width - 1 - y; y = t; break; }
+        case 2: x = T->width - 1 - x; y = T->height - 1 - y; break;
+        case 3: { int t = x; x = y; y = T->height - 1 - t; break; }
+        default: break;
+    }
+    if (y < bandY0 || y >= bandY1) return;
     int i = (y - bandY0) * T->width + x;
     if (T->bpp == 1) {
         uint8_t &b = T->buf[i >> 3], m = (uint8_t)(0x80 >> (i & 7));
@@ -31,10 +42,10 @@ void set(int x, int y, int ink) {
 
 // [x0, x1) x [y0, y1)
 void rect(int x0, int y0, int x1, int y1, int ink) {
-    if (x0 < 0) x0 = 0;
-    if (y0 < bandY0) y0 = bandY0;
-    if (x1 > T->width) x1 = T->width;
-    if (y1 > bandY1) y1 = bandY1;
+    if (x0 < cx0) x0 = cx0;
+    if (y0 < cy0) y0 = cy0;
+    if (x1 > cx1) x1 = cx1;
+    if (y1 > cy1) y1 = cy1;
     for (int y = y0; y < y1; y++)
         for (int x = x0; x < x1; x++) set(x, y, ink);
 }
@@ -196,7 +207,7 @@ int print(const CalFont &f, const char *s, int x, int baseline, int ink) {
         const CalGlyph *g = glyph(f, nextCp(&s));
         if (!g) continue;
         int top = baseline - g->yo - g->h;
-        if (top + g->h <= bandY0 || top >= bandY1) { x += g->adv; continue; }  // (outside this band)
+        if (top + g->h <= cy0 || top >= cy1 || x + g->xo + g->w <= cx0 || x + g->xo >= cx1) { x += g->adv; continue; }  // (outside this band)
         for (int r = 0; r < g->h; r++)
             for (int c = 0; c < g->w; c++)
                 if (bit(f, g, r, c)) set(x + g->xo + c, top + r, ink);
@@ -375,8 +386,20 @@ void calendarRender(const CalTarget &t, int year, int month, int today, float ba
     if (t.bpp == 1) memset(t.buf, white ? 0xFF : 0x00, px / 8);
     else memset(t.buf, (white << 6) | (white << 4) | (white << 2) | white, px / 4);
 
-    const int W = t.width, H = t.height;
-    const bool large = H >= 400;
+    LW = t.rot & 1 ? t.height : t.width;
+    LH = t.rot & 1 ? t.width : t.height;
+    // the band's rows of the panel, as a box of the upright picture (see set)
+    cx0 = 0; cy0 = 0; cx1 = LW; cy1 = LH;
+    switch (t.rot) {
+        case 0: cy0 = bandY0; cy1 = bandY1; break;
+        case 1: cx0 = bandY0; cx1 = bandY1; break;                      // panel y = upright x
+        case 2: cy0 = t.height - bandY1; cy1 = t.height - bandY0; break;  // panel y = H-1 - upright y
+        case 3: cx0 = t.height - bandY1; cx1 = t.height - bandY0; break; // panel y = H-1 - upright x
+    }
+    const int W = LW, H = LH;
+    const bool large = (W < H ? W : H) >= 400;  // the short side (isLarge), so upright too
+    // an upright 4.2": 休 / 班 at the top of their circle, the cell's content a little lower
+    const bool tall = H > W && !large;
     const int weekStart = 0;
     const LunarDay todayLunar = lunarOf(year, month, today);
     char s[64];
@@ -455,7 +478,7 @@ void calendarRender(const CalTarget &t, int year, int month, int today, float ba
             int cr = large ? 15 : 11;
             if (rows > 5) cr -= 1;
             const int bx = x + (bw - 2 * cr) / 2 + displayWeek * bw;
-            const int by = y + (bh - 2 * cr) / 2 + ((i + adjustedFirstDay) / 7) * bh + 3;
+            const int by = y + (bh - 2 * cr) / 2 + ((i + adjustedFirstDay) / 7) * bh + 3 + (tall ? 5 : 0);
 
             const int colCx = bx + cr;
             char dayStr[4];
@@ -523,22 +546,38 @@ void calendarRender(const CalTarget &t, int year, int month, int today, float ba
             if (hol > 0) {
                 const char *text = hol == 2 ? "班" : "休";
                 const int holInk = hol == 2 ? CAL_BLACK : CAL_RED;
+                // the 4.2": as small as the stem/branch characters
+                const CalFont &hf = large ? CAL_wqy9 : CAL_wqy6;
+                // On the circle round the date + lunar label (today's red disc) through the top
+                // stem/branch badge: that badge mirrored to the left, moved up along the circle
+                // past a two-digit date (upright 4.2": the top of the circle). Today a badge,
+                // other days the character alone, in the same place.
+                const InkBox &a = dayInk;
+                const InkBox b = inkBounds(lunarFont, label, labelX, labelBaseline);
+                const int dx0 = b.ok && b.x0 < a.x0 ? b.x0 : a.x0, dx1 = b.ok && b.x1 > a.x1 ? b.x1 : a.x1;
+                const int dcx = jsRound((dx0 + dx1) / 2.0), dcy = jsRound((a.y0 + (b.ok ? b.y1 : a.y1)) / 2.0);
+                const int rr = large ? 9 : 7;
+                int gx = taxX + (large ? 36 : 27) - offset - 1;
+                if (dayInk.x1 + 2 + rr > gx) gx = dayInk.x1 + 2 + rr;
+                int gy = by - 2 - 8 - 3;
+                if (b.ok && b.y0 - 2 - rr - (2 * rr + 1) < gy) gy = b.y0 - 2 - rr - (2 * rr + 1);
+                const double R = hypot((double)(gx - dcx), (double)(gy - dcy));
+                double th = tall ? -JS_PI / 2 : atan2((double)(gy - dcy), (double)(gx - dcx));
+                int rx, ry;
+                for (;;) {
+                    rx = jsRound(dcx - R * cos(th));
+                    ry = jsRound(dcy + R * sin(th));
+                    bool clear = rx + rr + 1 < dayInk.x0 || ry + rr + 1 < dayInk.y0;
+                    if (clear || !(th > -JS_PI / 2)) break;
+                    th -= JS_PI / 90;
+                }
                 if (isToday) {
-                    const int rr = large ? 10 : 8;
-                    int rx = bx - (large ? 10 : 5);
-                    if (dayInk.x0 - 2 - rr < rx) rx = dayInk.x0 - 2 - rr;
-                    const int ry = by - 2;
                     fillCircle(rx, ry, rr, CAL_WHITE);
                     drawCircle(rx, ry, rr, CAL_RED);
-                    int px, pb;
-                    centeredAt(CAL_wqy9, text, rx, ry, &px, &pb);
-                    print(CAL_wqy9, text, px, pb, holInk);
-                } else {
-                    InkBox ib = inkBounds(CAL_wqy9, text, 0, 0);
-                    int hx = bx - (large ? 20 : 11);
-                    if (dayInk.x0 - 2 - ib.x1 < hx) hx = dayInk.x0 - 2 - ib.x1;
-                    print(CAL_wqy9, text, hx, by + 3, holInk);
                 }
+                int px, pb;
+                centeredAt(hf, text, rx, ry, &px, &pb);
+                print(hf, text, px, pb, holInk);
             }
         }
     }

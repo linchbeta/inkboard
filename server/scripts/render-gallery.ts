@@ -1,5 +1,6 @@
 // Renders every layout with made-up demo content into ../pic/<layout>-398.png and -42.png,
-// for the README. npx tsx scripts/render-gallery.ts
+// for the README, and the 3.98" upright into ../pic/portrait/<layout>-398.png.
+// npx tsx scripts/render-gallery.ts
 // Uses a throwaway in-memory database; weather, market, news and dictionary lookups come
 // from the network (public data), the photo is drawn here. Existing photo-*.png files are
 // left alone, so a real preview put there by hand survives a re-run.
@@ -11,13 +12,13 @@ import { setPlace } from "../src/data/weather.js";
 import { setModeConfig } from "../src/data/modeConfig.js";
 import { addMessage } from "../src/data/messages.js";
 import { addPhoto } from "../src/data/photos.js";
-import { PANELS } from "../src/panels.js";
+import { PANELS, orientedPanel } from "../src/panels.js";
 import { SCREENS, prepareScreen, renderScreen } from "../src/frames.js";
 import { previewPng, rgbPng } from "../src/render/pack.js";
 import { DEV_ONLY } from "../src/admin/common.js";
 
 const out = join(import.meta.dirname, "..", "..", "pic");
-mkdirSync(out, { recursive: true });
+mkdirSync(join(out, "portrait"), { recursive: true });
 const now = new Date(2026, 9, 9, 10, 15);  // a Friday morning, during the third lesson
 const at = (d: number, h: number, m = 0) => new Date(2026, 9, d, h, m);
 
@@ -49,12 +50,15 @@ await runAs(1, async () => {
   setModeConfig(db, "words", SCREENS.words.config!, { level: "pep7a" });
   addPhoto(db, landscape(), "秋天的山");
 
-  const panels: [string, typeof PANELS.se0398][] = [["398", PANELS.se0398], ["42", PANELS.hink42_bwr]];
+  // landscape, and the 3.98" upright (pic/portrait)
+  const panels: [string, typeof PANELS.se0398][] = [["", PANELS.se0398], ["", PANELS.hink42_bwr],
+    ["portrait", orientedPanel(PANELS.se0398, "portrait")]];
   for (const id of Object.keys(SCREENS).filter((k) => !DEV_ONLY.has(k))) {
     const ctx = await prepareScreen(db, id, now, { advance: "1" });
-    for (const [tag, p] of panels) {
-      if (id === "photo" && existsSync(join(out, `${id}-${tag}.png`))) continue;
-      writeFileSync(join(out, `${id}-${tag}.png`), previewPng(renderScreen(p, { ...ctx, now, batteryV: 4.05 }, id), p));
+    for (const [dir, p] of panels) {
+      const file = join(out, dir, `${id}-${p.id === "se0398" ? "398" : "42"}.png`);
+      if (id === "photo" && existsSync(file)) continue;
+      writeFileSync(file, previewPng(renderScreen(p, { ...ctx, now, batteryV: 4.05 }, id), p));
     }
     console.log(`${id.padEnd(14)} ${SCREENS[id].name}`);
   }

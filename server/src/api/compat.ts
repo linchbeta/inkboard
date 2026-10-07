@@ -6,6 +6,7 @@ import { matchPanel } from "../panels.js";
 import { genericPanel } from "../frames.js";
 import { refreshMinutes, nextWakeUnix } from "../schedule.js";
 import { frameFor } from "../deviceFrame.js";
+import { ORIENTATIONS } from "../panels.js";
 import { getSettings } from "../data/devices.js";
 import { holidayOf, loadedHolidayYears } from "../data/calendar.js";
 import type { AppOptions } from "../app.js";
@@ -99,6 +100,9 @@ export function compatRoutes(db: Db, opts: AppOptions): Hono {
       // the same wake as a point in time (Unix s), for ours: it sleeps until then, so the
       // time spent downloading and refreshing does not push it late
       "X-Next-Wake": String(nextWakeUnix(now, schedule)),
+      // how the screen stands (0 landscape, 1 portrait, 2 / 3 those upside down), so the
+      // firmware draws its own screens (offline calendar, setup) the same way round
+      "X-Orientation": String(ORIENTATIONS.findIndex(([o]) => o === (settings?.orientation ?? "landscape"))),
       "X-Mode-Id": frame.modeId,
       // The frame's fingerprint, before the body: the device skips an unchanged frame
       // (304, no download / refresh) and knows whether a message frame is new.

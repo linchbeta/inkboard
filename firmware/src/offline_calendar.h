@@ -73,6 +73,12 @@ uint64_t clockSleepMicros(uint32_t seconds);
 bool calendarOnly();
 void setCalendarOnly(bool on);
 
+// How the screen stands, as the server last said (X-Orientation: 0 landscape, 1 portrait =
+// turned a quarter counter-clockwise, 2 / 3 those upside down); the device's own screens
+// (offline calendar, setup) are drawn the same way round. Kept in NVS, written on change.
+int screenRotation();
+void setScreenRotation(int rot);
+
 // ── local calendar ──────────────────────────────────────────
 // Today's calendar on the panel. Unless `force`, does nothing if it already shows it.
 // False if this panel has no local calendar or memory is short.

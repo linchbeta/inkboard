@@ -59,6 +59,18 @@
 | 行情 | <img src="pic/market-398.png" width="384"> | <img src="pic/market-42.png" width="200"> |
 | 资讯 | <img src="pic/news-398.png" width="384"> | <img src="pic/news-42.png" width="200"> |
 
+### 竖着放
+
+每个布局都有竖版。在后台"设备"里把屏幕方向改成纵向，再把屏逆时针转 90° 竖起来就行；断网时的离线日历和配网画面也跟着变成竖版。下面是 3.98 寸竖放（552×768）的样子：
+
+| | | | |
+|---|---|---|---|
+| <img src="pic/portrait/calendar-398.png" width="180"><br>日历 | <img src="pic/portrait/datecard-398.png" width="180"><br>日期牌 | <img src="pic/portrait/weather-398.png" width="180"><br>天气 | <img src="pic/portrait/photo-398.png" width="180"><br>相框 |
+| <img src="pic/portrait/yearprogress-398.png" width="180"><br>年度进度 | <img src="pic/portrait/countdown-398.png" width="180"><br>倒数日 | <img src="pic/portrait/messages-398.png" width="180"><br>留言板 | <img src="pic/portrait/todo-398.png" width="180"><br>待办作业 |
+| <img src="pic/portrait/poetry-398.png" width="180"><br>古诗词 | <img src="pic/portrait/words-398.png" width="180"><br>外语单词 | <img src="pic/portrait/almanac-398.png" width="180"><br>月相黄历 | <img src="pic/portrait/agenda-398.png" width="180"><br>日程 |
+| <img src="pic/portrait/timetable-398.png" width="180"><br>课程表 | <img src="pic/portrait/dashboard-398.png" width="180"><br>看板 | <img src="pic/portrait/hitokoto-398.png" width="180"><br>一言 | <img src="pic/portrait/market-398.png" width="180"><br>行情 |
+| <img src="pic/portrait/news-398.png" width="180"><br>资讯 |  |  |  |
+
 ## 屏幕
 
 我手上实测过的是 3.98 寸 SE0398NZ07（A0 版，黑白黄红）和 4.2 寸 HINK SSD1683（黑白红）。3.98 寸的 A1 版也写好了驱动，但还没有实物测过。

@@ -696,8 +696,8 @@ static bool fetchFrame(bool nextMode, bool *isFallback, String *renderedModeIdOu
         http.setTimeout(HTTP_TIMEOUT);
         http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
         const char *headerKeys[] = {"X-Content-Fallback", "X-Refresh-Minutes", "X-Mode-Id", "Date", "ETag",
-                                    "X-Next-Wake"};
-        http.collectHeaders(headerKeys, 6);
+                                    "X-Next-Wake", "X-Orientation"};
+        http.collectHeaders(headerKeys, 7);
 
         http.addHeader("Accept-Encoding", "identity");
         http.addHeader("Connection", "close");
@@ -731,6 +731,9 @@ static bool fetchFrame(bool nextMode, bool *isFallback, String *renderedModeIdOu
         // countdown to it (for InkSight firmware), not an interval to keep.
         long long nextWake = strtoll(http.header("X-Next-Wake").c_str(), nullptr, 10);
         if (nextWake > 0) setNextWake((time_t)nextWake);
+        // how the screen stands: the offline calendar and the setup screen follow it
+        String orient = http.header("X-Orientation");
+        if (orient.length() == 1 && orient[0] >= '0' && orient[0] <= '3') setScreenRotation(orient[0] - '0');
         String refreshHeader = http.header("X-Refresh-Minutes");
         int serverRefreshMin = refreshHeader.toInt();
         if (nextWake <= 0 && serverRefreshMin >= 10 && serverRefreshMin <= 1440 && serverRefreshMin != cfgSleepMin) {

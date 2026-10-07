@@ -1,12 +1,13 @@
 // Server side of the calendar comparison: one line per day and panel with the FNV-1a hash
 // of the frame the server sends -- 2bpp, or for B/W panels the 1-bit BMP's pixels as the
 // firmware stores them (rows top to bottom, no padding). Run from server/:
-//   npx tsx ../firmware/tools/calendar_test/expected.ts 2025 2030 [all] > expected.txt
-import { PANELS, type Panel } from "../../../server/src/panels.js";
+//   npx tsx ../firmware/tools/calendar_test/expected.ts 2025 2030 [all|ours] [landscape|portrait|landscape-flip|portrait-flip] > expected.txt
+import { PANELS, type Panel, type Orientation } from "../../../server/src/panels.js";
 import { buildFrame, genericPanel } from "../../../server/src/frames.js";
 
 const [from, to] = [Number(process.argv[2] ?? 2025), Number(process.argv[3] ?? 2030)];
 const all = process.argv[4] === "all";
+const orientation = (process.argv[5] ?? "landscape") as Orientation;
 const fnv = (b: Uint8Array) => {
   let h = 0xcbf29ce484222325n;
   for (const x of b) h = BigInt.asUintN(64, (h ^ BigInt(x)) * 0x100000001b3n);
@@ -33,7 +34,7 @@ for (let y = from; y <= to; y++) for (let m = 1; m <= 12; m++) {
   for (let d = 1; d <= dim; d++) for (const [id, p, twoBpp] of panels) {
     // with a battery reading on the 1st, to cover the battery icon too
     const batteryV = d === 1 ? 3.62 + (m % 5) * 0.13 : undefined;
-    const f = buildFrame(p, { now: new Date(y, m - 1, d, 9), batteryV }, twoBpp, "calendar");
+    const f = buildFrame(p, { now: new Date(y, m - 1, d, 9), batteryV }, twoBpp, "calendar", orientation);
     lines.push(`${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")} ${id} ${fnv(twoBpp ? f.body : bmpPixels(f.body, p.width, p.height))}`);
   }
 }
