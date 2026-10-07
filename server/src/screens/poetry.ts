@@ -134,7 +134,9 @@ export function renderPoetry(panel: Panel, ctx: ScreenContext) {
   const flat = H > W ? plan(poem, large, H - 2 * m - 2 * pad, W - f.top - 2 * pad) : undefined;
   const L = plan(poem, large, maxW, maxH, flat ? fh(flat.body) : Infinity);
   const cx = Math.round(W / 2);
-  let y = f.top + pad + Math.max(0, Math.round((maxH - L.h) / 3));
+  // upright: the title at the top, the poem centred in the room under it
+  const tall = H > W;
+  let y = tall ? f.top + pad + (large ? 24 : 12) : f.top + pad + Math.max(0, Math.round((maxH - L.h) / 3));
 
   // title (red) and "朝代 · 作者" with short red rules either side
   y += L.title.ascent;
@@ -150,6 +152,10 @@ export function renderPoetry(panel: Panel, ctx: ScreenContext) {
 
   // the text: centred lines per column, or a left-aligned block of running text
   const rows = Math.ceil(L.lines.length / L.cols);
+  if (tall) {
+    const textH = rows * L.lineH - (L.lineH - fh(L.body));
+    y += Math.max(0, Math.round((H - pad - (large ? 24 : 12) - y - textH) / 2));
+  }
   const blockW = L.cols * L.colW + (L.cols - 1) * L.colGap;
   const bx = Math.round(cx - blockW / 2);
   L.lines.forEach((line, i) => {
