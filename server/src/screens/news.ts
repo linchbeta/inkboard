@@ -85,6 +85,7 @@ export const newsMode: Screen = {
   description: "订阅的 RSS 资讯标题，最新的在前；第一条带摘要。",
   config: CONFIG,
   render: renderNews,
+  portrait: true,
   prepare: async (db) => {
     const lines = getModeConfig(db, "news", CONFIG).feeds.split("\n").map((l) => l.trim()).filter((l) => l && !l.startsWith("#"));
     const items: NewsItem[] = [], errors: string[] = [];

@@ -86,15 +86,17 @@ export function renderMarket(panel: Panel, ctx: ScreenContext) {
   print(c, large ? wqy12 : wqy9, "%", cx + 1, priceBase - (large ? 16 : 6), inkOf(q0));
   if (large) print(c, wqy9, `昨收 ${fmt(q0.prev, q0.decimals)}`, pe + 12, priceBase + 4, Ink.Black);
 
-  // minute chart (right of the price on 3.98", full width below on 4.2")
-  const chart = large
+  // minute chart (right of the price on 3.98", full width below on 4.2" and upright)
+  const beside = large && H < W;
+  const chart = beside
     ? { x0: 420, y0: f.top + 22, x1: W - m, y1: priceBase + 6 }
+    : large ? { x0: m, y0: priceBase + 18, x1: W - m, y1: priceBase + 110 }
     : { x0: m, y0: priceBase + 10, x1: W - m, y1: priceBase + 46 };
   if (data.minutes.length > 1) sparkline(c, data.minutes, q0.prev, chart.x0, chart.y0, chart.x1, chart.y1, large ? 2 : 1, panel.colors >= 4);
 
   // ── the rest as a table ──
   const rest = data.quotes.slice(1);
-  const tTop = (large ? priceBase : chart.y1) + (large ? 30 : 12);
+  const tTop = (beside ? priceBase : chart.y1) + (large ? 30 : 12);
   c.rect(m, tTop, W - m, tTop + 1, Ink.Black);
   // rows share the free height (within limits); a second column only when one is not enough
   const avail = H - tTop - 6;
@@ -131,6 +133,7 @@ export const marketMode: Screen = {
   description: "股票、指数、黄金、汇率：第一项大字加当天走势，其余列表（红涨黑跌）。",
   config: CONFIG,
   render: renderMarket,
+  portrait: true,
   prepare: async (db) => {
     const codes = parseCodes(getModeConfig(db, "market", CONFIG).codes);
     if (!codes.length) return { data: { quotes: [], minutes: [], configured: false } satisfies MarketData };

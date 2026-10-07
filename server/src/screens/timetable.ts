@@ -260,7 +260,8 @@ function drawWeek(f: ReturnType<typeof screenWithHeader>, tt: Timetable, sd: Sch
   const timeW = Math.max(large ? (many ? 84 : 96) : (many ? 38 : 44), labelW + (large ? 14 : 8));
   const headH = large ? (many ? 40 : 46) : (many ? 24 : 30);
   const top = f.top + (large ? 10 : 4), bottom = H - (large ? 12 : 4);
-  const rowH = Math.min(large ? 64 : 40, Math.floor((bottom - top - headH) / rows));
+  // upright, the rows share the panel's long side (a lower cap), so the grid fills it
+  const rowH = Math.min(H > W ? (large ? 120 : 64) : large ? 64 : 40, Math.floor((bottom - top - headH) / rows));
   const x0 = m + timeW, colW = Math.floor((W - m - x0) / cols.length);
   const gridTop = top + headH;
   // sizes up to what a one-period block holds, so longer blocks do not get bigger type
@@ -365,7 +366,7 @@ function drawDay(f: ReturnType<typeof screenWithHeader>, tt: Timetable, sd: Scho
   const breaks = breakBefore.filter(Boolean).length;
   const gapH = large ? 14 : 6;
   const top = f.top + (large ? 12 : 4), bottom = H - (large ? 12 : 4);
-  const rowH = Math.min(large ? 88 : 56, Math.floor((bottom - top - breaks * gapH) / ls.length));
+  const rowH = Math.min(H > W ? (large ? 130 : 80) : large ? 88 : 56, Math.floor((bottom - top - breaks * gapH) / ls.length));
   const tf = large ? wqy12 : wqy9;
   const timeW = width(tf, "00:00-00:00") + (large ? 24 : 12);
   const tagF = large ? wqy12 : wqy9;
@@ -412,6 +413,7 @@ export const timetableMode: Screen = {
   description: "小学到大学的课程表：整周或当天，正在上和下一节课用红色标出；大学可按周次、单双周排课；周末、放假时显示下一个上学日。",
   config: CONFIG,
   render: renderTimetable,
+  portrait: true,
   prepare: async (db) => {
     const cfg = getModeConfig(db, "timetable", CONFIG);
     const periods = cfg.periods.trim() ? cfg.periods : PRESETS[cfg.stage] ?? PRESETS.primary;

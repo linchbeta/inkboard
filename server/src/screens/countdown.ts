@@ -53,9 +53,13 @@ export function renderCountdown(panel: Panel, ctx: ScreenContext) {
   const rest = events.filter((e) => e !== main);
 
   // ── featured: name / [还有] 123 [天] / date, centred in its area ──
-  const area = large && rest.length
-    ? { x0: m, x1: 400, y0: f.top, y1: H }
-    : { x0: m, x1: W - m, y0: f.top, y1: large || !rest.length ? H : f.top + 150 };
+  // upright: the featured one in the top part, the others listed under it, full width
+  const tall = H > W;
+  const area = tall && rest.length
+    ? { x0: m, x1: W - m, y0: f.top, y1: f.top + Math.round((H - f.top) * (large ? 0.4 : 0.42)) }
+    : large && rest.length
+      ? { x0: m, x1: 400, y0: f.top, y1: H }
+      : { x0: m, x1: W - m, y0: f.top, y1: large || !rest.length ? H : f.top + 150 };
   const cx = Math.round((area.x0 + area.x1) / 2);
   const nameF = fitCjk(main.name, area.x1 - area.x0 - 20, large, large ? 40 : 32);
   const name = ellipsize(nameF, main.name, area.x1 - area.x0 - 20);
@@ -73,10 +77,11 @@ export function renderCountdown(panel: Panel, ctx: ScreenContext) {
   } else {
     const verb = main.past ? "已经" : "还有";
     const n = String(main.days);
-    const wV = width(verbF, verb), wN = width(num, n), wU = width(unitF, "天");
-    let x = Math.round(cx - (wV + 12 + wN + 10 + wU) / 2);
-    x = print(c, verbF, verb, x, y, Ink.Black) + 12;
-    x = print(c, num, n, x, y, main.past ? Ink.Black : Ink.Red) + 10;
+    // the number itself on the centre line, 还有 / 天 beside it
+    const wV = width(verbF, verb), wN = width(num, n);
+    const nx = Math.round(cx - wN / 2);
+    print(c, verbF, verb, nx - 12 - wV, y, Ink.Black);
+    const x = print(c, num, n, nx, y, main.past ? Ink.Black : Ink.Red) + 10;
     print(c, unitF, "天", x, y, Ink.Black);
   }
   y += gap2 + dateF.ascent;
@@ -85,21 +90,22 @@ export function renderCountdown(panel: Panel, ctx: ScreenContext) {
 
   if (!rest.length) return c;
   const days = bigRef("barlow", large ? 44 : 32);
-  if (large) {
-    // ── the others: a list sharing the column's height ──
-    c.dottedV(412, f.top + 20, H - 20, Ink.Black, 1, 3);
-    const x0 = 432, x1 = W - m;
-    const top = f.top + 14, avail = H - top - 12;
-    const rowH = Math.max(52, Math.min(80, Math.floor(avail / rest.length)));
+  if (large || tall) {
+    // ── the others: a list sharing the column's height (upright: under the featured one) ──
+    if (tall) c.dottedH(m, W - m, area.y1, Ink.Black, 1, 3);
+    else c.dottedV(412, f.top + 20, H - 20, Ink.Black, 1, 3);
+    const x0 = tall ? m : 432, x1 = W - m;
+    const top = tall ? area.y1 + (large ? 10 : 4) : f.top + 14, avail = H - top - (large ? 12 : 6);
+    const rowH = large ? Math.max(52, Math.min(80, Math.floor(avail / rest.length))) : Math.max(36, Math.min(48, Math.floor(avail / rest.length)));
     const shown = Math.min(rest.length, Math.floor(avail / rowH));
     const y0 = top + Math.round((avail - shown * rowH) / 2);
     rest.slice(0, shown).forEach((e, i) => {
       const mid = y0 + i * rowH + Math.round(rowH / 2);
       const numS = String(e.days);
       const right = x1 - width(wqy12, "天") - 6 - width(days, numS);
-      print(c, wqy12, ellipsize(wqy12, e.name, right - x0 - 14), x0, mid - 4, Ink.Black);
+      print(c, wqy12, ellipsize(wqy12, e.name, right - x0 - 14), x0, mid - (large ? 4 : 2), Ink.Black);
       const showYear = e.past || e.date.getFullYear() > ctx.now.getFullYear() + 1;
-      print(c, wqy9, ellipsize(wqy9, (e.past ? "已经 · " : "") + dateLine(e, showYear), right - x0 - 14), x0, mid + 16, Ink.Black);
+      print(c, wqy9, ellipsize(wqy9, (e.past ? "已经 · " : "") + dateLine(e, showYear), right - x0 - 14), x0, mid + (large ? 16 : 12), Ink.Black);
       const nb = mid + Math.round(days.ascent / 2) - 2;
       print(c, days, numS, right, nb, e.past ? Ink.Black : Ink.Red);
       print(c, wqy12, "天", x1 - width(wqy12, "天"), nb, Ink.Black);
@@ -131,6 +137,7 @@ export const countdownMode: Screen = {
   description: "考试、生日、纪念日、下个假期……离那天还有多少天（支持农历和每年重复，可选哪个大字显示）。",
   config: CONFIG,
   render: renderCountdown,
+  portrait: true,
   prepare: async (db, now) => {
     const cfg = getModeConfig(db, "countdown", CONFIG);
     return { data: { events: parseCountdowns(cfg.events, now).events, featured: cfg.featured } satisfies CountdownData };

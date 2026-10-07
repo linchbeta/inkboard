@@ -244,7 +244,8 @@ export function renderCalendar(panel: Panel, ctx: ScreenContext, opts: CalendarO
         if (isToday) {
           const rr = large ? 10 : 8;
           // Reference x, pushed left if the badge would cover the date (upright: the corner).
-          const rx = tall ? x + displayWeek * bw + rr + 3 : Math.min(bx - (large ? 10 : 5), dayInk.x0 - 2 - rr);
+          // (never into the cell on the left: narrow upright cells)
+          const rx = tall ? x + displayWeek * bw + rr + 3 : Math.max(x + displayWeek * bw + rr + 1, Math.min(bx - (large ? 10 : 5), dayInk.x0 - 2 - rr));
           const ry = tall ? cellTop + rr + 3 : by - 2;
           fillCircle(c, rx, ry, rr, Ink.White);
           drawCircle(c, rx, ry, rr, Ink.Red);
@@ -257,7 +258,7 @@ export function renderCalendar(panel: Panel, ctx: ScreenContext, opts: CalendarO
         } else {
           // Reference position, pushed left if it would touch the date.
           const ink = inkBounds(wqy9, text, 0, 0)!;
-          const hx = tall ? x + displayWeek * bw + 4 : Math.min(bx - (large ? 20 : 11), dayInk.x0 - 2 - ink.x1);
+          const hx = tall ? x + displayWeek * bw + 4 : Math.max(x + displayWeek * bw + 2, Math.min(bx - (large ? 20 : 11), dayInk.x0 - 2 - ink.x1));
           const hb = tall ? cellTop + 4 - ink.y0 : by + 3;
           print(c, wqy9, text, hx, hb, holInk);
           box(day, text, wqy9, text, hx, hb);

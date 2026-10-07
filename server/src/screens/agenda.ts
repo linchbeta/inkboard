@@ -61,7 +61,7 @@ export function renderAgenda(panel: Panel, ctx: ScreenContext) {
 
   const font = large ? wqy12 : wqy9;
   const rowH = large ? 26 : 17, headH = large ? 32 : 22, timeW = width(font, "00:00") + (large ? 14 : 8);
-  const cols = large ? 2 : 1, gap = 28;
+  const cols = large && H < W ? 2 : 1, gap = 28;  // upright: one column
   const colW = Math.floor((W - 2 * m - (cols - 1) * gap) / cols);
   const colY = Array.from({ length: cols }, () => f.top + (large ? 14 : 8));
   const bottom = H - (large ? 22 : 16); // room for "还有 N 项未显示"
@@ -118,6 +118,7 @@ export const agendaMode: Screen = {
   description: "接下来几天的日程：订阅 Google / iCloud / Outlook / 飞书等日历（ICS 链接），或手动添加。",
   config: CONFIG,
   render: renderAgenda,
+  portrait: true,
   prepare: async (db, now) => {
     const cfg = getModeConfig(db, "agenda", CONFIG);
     // today and the next `days` days, the last one included

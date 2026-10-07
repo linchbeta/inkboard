@@ -52,17 +52,23 @@ export function renderYearProgress(panel: Panel, ctx: ScreenContext) {
   const big = bigRef("barlow", large ? 96 : 56);
   const leftH = font.ascent + (large ? 14 : 8) + big.ascent + (large ? 18 : 10) + font.ascent;
   const rowH = large ? 34 : 19;
-  const aH = Math.max(leftH, 5 * rowH);
+  // upright: the bars under the percentage (full width), and the year as 12 month rows of
+  // up to 31 days instead of 53 week columns, which would be too small across
+  const tall = H > W;
+  const barsGap = large ? 22 : 12;
+  const aH = tall ? leftH + barsGap + 5 * rowH : Math.max(leftH, 5 * rowH);
   const jan1 = new Date(y, 0, 1);
   const firstDow = (jan1.getDay() + 6) % 7;
   const days = Math.round((new Date(y + 1, 0, 1).getTime() - jan1.getTime()) / DAY);
   const weeks = Math.ceil((firstDow + days) / 7);
   const labelCol = large ? 26 : 0; // weekday labels only where the rows are tall enough
   const gAvail = bx1 - (m + labelCol);
-  const cell = Math.floor(gAvail / weeks);
+  const mLabelW = width(wqy9, "12月") + (large ? 10 : 6);
+  const cell = tall ? Math.floor((bx1 - m - mLabelW) / 31) : Math.floor(gAvail / weeks);
   const dot = cell - (large ? 3 : 2);
-  const monthH = large ? 18 : 12, legendH = large ? 30 : 20;
-  const bH = monthH + 7 * cell + legendH;
+  const monthH = tall ? 0 : large ? 18 : 12, legendH = large ? 30 : 20;
+  const gridRows = tall ? 12 : 7;
+  const bH = monthH + gridRows * cell + legendH;
   const cH = large ? 40 : 26;
   const free = Math.max(0, H - f.top - aH - bH - cH);
   const gap = Math.floor(free / 3.5); // top, A|B, B|C, half at the bottom
@@ -82,10 +88,10 @@ export function renderYearProgress(panel: Panel, ctx: ScreenContext) {
   x = print(c, font, String(days - daysPast), x, ly, Ink.Red);
   print(c, font, " 天", x, ly, Ink.Black);
 
-  const bx0 = large ? 330 : 176;
-  const labelW = large ? 74 : 44, noteW = large ? 96 : 0;
+  const bx0 = tall ? m : large ? 330 : 176;
+  const labelW = large ? 74 : 44, noteW = large ? 96 : tall ? 64 : 0;
   const tones: Tone[] = [[[Ink.Red, 1]], [[Ink.Yellow, 1]], [[Ink.Yellow, 1]], [[Ink.Yellow, 1]], [[Ink.Black, 0.35]]];
-  const barsTop = aTop + Math.round((aH - 5 * rowH) / 2);
+  const barsTop = tall ? aTop + leftH + barsGap - (large ? 6 : 4) : aTop + Math.round((aH - 5 * rowH) / 2);
   rows.forEach((r, i) => {
     const base = barsTop + i * rowH + (large ? 20 : 13);
     print(c, font, r.label, bx0, base, Ink.Black);
@@ -96,24 +102,27 @@ export function renderYearProgress(panel: Panel, ctx: ScreenContext) {
     if (noteW) print(c, wqy9, r.note, bx1 - width(wqy9, r.note), base, Ink.Black);
   });
 
-  // ── B: the year as a week x weekday grid ──
-  const gx0 = m + labelCol + Math.floor((gAvail - cell * weeks) / 2);
+  // ── B: the year as a week x weekday grid (upright: month x day) ──
+  const gx0 = tall ? m + mLabelW : m + labelCol + Math.floor((gAvail - cell * weeks) / 2);
   const gy0 = aTop + aH + gap + monthH;
   const today = daysPast - 1;
-  if (large) ["一", "三", "五", "日"].forEach((t, k) => {
+  if (tall) {
+    for (let mo = 0; mo < 12; mo++) {
+      const gy = gy0 + mo * cell;
+      // rows lower than the label (the 4.2"): every third month
+      if (cell >= 12 || mo % 3 === 0) print(c, wqy9, `${mo + 1}月`, m, gy + Math.round(dot / 2) + 5, Ink.Black);
+      for (let dd = 1; dd <= new Date(y, mo + 1, 0).getDate(); dd++) {
+        const i = Math.round((new Date(y, mo, dd).getTime() - jan1.getTime()) / DAY);
+        dayCell(i, mo + 1, dd, gx0 + (dd - 1) * cell, gy);
+      }
+    }
+  }
+  if (large && !tall) ["一", "三", "五", "日"].forEach((t, k) => {
     const row = [0, 2, 4, 6][k];
     print(c, wqy9, t, m, gy0 + row * cell + Math.round(dot / 2) + 5, Ink.Black);
   });
-  let monthLabelEnd = -Infinity;
-  for (let i = 0; i < days; i++) {
-    const dt = new Date(y, 0, 1 + i);
-    const k = firstDow + i, col = Math.floor(k / 7), row = k % 7;
-    const gx = gx0 + col * cell, gy = gy0 + row * cell;
-    const off = holidayOf(y, dt.getMonth() + 1, dt.getDate()) === "off";
-    if (dt.getDate() === 1) {
-      const lbl = `${dt.getMonth() + 1}月`;
-      if (gx > monthLabelEnd + 3 && gx + width(wqy9, lbl) < bx1) monthLabelEnd = print(c, wqy9, lbl, gx, gy0 - (large ? 6 : 4), Ink.Black);
-    }
+  function dayCell(i: number, mo: number, dd: number, gx: number, gy: number) {
+    const off = holidayOf(y, mo, dd) === "off";
     if (i === today) { // red, one px larger all round, with a black ring (stands out from red days off on B/W/R)
       c.frame(gx - 2, gy - 2, gx + dot + 2, gy + dot + 2, Ink.Black);
       c.rect(gx - 1, gy - 1, gx + dot + 1, gy + dot + 1, Ink.Red);
@@ -124,7 +133,18 @@ export function renderYearProgress(panel: Panel, ctx: ScreenContext) {
       c.frame(gx, gy, gx + dot, gy + dot, Ink.Black);
     }
   }
-  const legY = gy0 + 7 * cell + legendH - (large ? 8 : 6);
+  let monthLabelEnd = -Infinity;
+  for (let i = 0; i < days && !tall; i++) {
+    const dt = new Date(y, 0, 1 + i);
+    const k = firstDow + i, col = Math.floor(k / 7), row = k % 7;
+    const gx = gx0 + col * cell, gy = gy0 + row * cell;
+    if (dt.getDate() === 1) {
+      const lbl = `${dt.getMonth() + 1}月`;
+      if (gx > monthLabelEnd + 3 && gx + width(wqy9, lbl) < bx1) monthLabelEnd = print(c, wqy9, lbl, gx, gy0 - (large ? 6 : 4), Ink.Black);
+    }
+    dayCell(i, dt.getMonth() + 1, dt.getDate(), gx, gy);
+  }
+  const legY = gy0 + gridRows * cell + legendH - (large ? 8 : 6);
   {
     let lx = gx0;
     const sw = large ? 10 : 7;
@@ -140,7 +160,7 @@ export function renderYearProgress(panel: Panel, ctx: ScreenContext) {
   }
 
   // ── C: coming days off: "接下来  元旦 89天  春节 ..." ──
-  const cTop = gy0 + 7 * cell + legendH + gap;
+  const cTop = gy0 + gridRows * cell + legendH + gap;
   c.dottedH(m, bx1, cTop, Ink.Black, 1, 3);
   const hy = cTop + cH - (large ? 10 : 6);
   x = print(c, font, "接下来", m, hy, Ink.Black) + (large ? 18 : 10);
@@ -165,4 +185,5 @@ export const yearProgressMode: Screen = {
   name: "年度进度",
   description: "今年、本季、本月、本周、今天各过了多少，加整年的日历点阵图。",
   render: renderYearProgress,
+  portrait: true,
 };

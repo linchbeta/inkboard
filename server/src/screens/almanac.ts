@@ -95,26 +95,32 @@ export function renderAlmanac(panel: Panel, ctx: ScreenContext) {
   const textLH = large ? 30 : 16;
   const textH = (large ? 40 : 22) + textLH * (1 + upcoming.length);
   const availH = H - f.top - (large ? 24 : 10);
-  const r = Math.floor(Math.min((split - m) / 2 - (large ? 12 : 4), (availH - textH - (large ? 20 : 8)) / 2));
-  const top = f.top + Math.round((availH - (2 * r + textH)) / 2) + (large ? 12 : 5);
-  const mcx = Math.round((m + split) / 2), mcy = top + r;
+  // upright: a band across the top, the moon on the left and its text on the right; the
+  // almanac fills the rest below, full width
+  const tall = H > W;
+  const bandH = tall ? Math.round((H - f.top) * (large ? 0.34 : 0.36)) : 0;
+  const r = tall ? Math.floor(Math.min((W / 2 - m) / 2 - (large ? 12 : 4), (bandH - (large ? 24 : 12)) / 2))
+    : Math.floor(Math.min((split - m) / 2 - (large ? 12 : 4), (availH - textH - (large ? 20 : 8)) / 2));
+  const top = tall ? f.top + Math.round(bandH / 2) - r : f.top + Math.round((availH - (2 * r + textH)) / 2) + (large ? 12 : 5);
+  const mcx = tall ? Math.round(m + (W / 2 - m) / 2) : Math.round((m + split) / 2), mcy = top + r;
   drawMoon(c, mcx, mcy, r, ph.age, panel.colors >= 4);
-  let ty = mcy + r + (large ? 40 : 22);
   const name = phaseName(ph.age);
   const nameF = large ? bigRef("wenkai", 28) : wqy12;
-  print(c, nameF, name, centeredX(nameF, name, mcx), ty, Ink.Red);
-  ty += textLH;
-  const stat = `月龄 ${ph.age.toFixed(1)} 天 · 照亮 ${Math.round(ph.lit * 100)}%`;
-  print(c, font, stat, centeredX(font, stat, mcx), ty, Ink.Black);
-  for (const [label, dt] of upcoming) {
+  const stats = tall ? [`月龄 ${ph.age.toFixed(1)} 天`, `照亮 ${Math.round(ph.lit * 100)}%`]
+    : [`月龄 ${ph.age.toFixed(1)} 天 · 照亮 ${Math.round(ph.lit * 100)}%`];
+  const lines = [...stats, ...upcoming.map(([label, dt]) => `${label} ${md(dt)}（${daysUntil(now, dt)}天后）`)];
+  const tcx = tall ? Math.round(W * 3 / 4) : mcx;
+  let ty = tall ? f.top + Math.round((bandH - (nameF.ascent + lines.length * textLH)) / 2) + nameF.ascent : mcy + r + (large ? 40 : 22);
+  print(c, nameF, name, centeredX(nameF, name, tcx), ty, Ink.Red);
+  for (const s2 of lines) {
     ty += textLH;
-    const s = `${label} ${md(dt)}（${daysUntil(now, dt)}天后）`;
-    print(c, font, s, centeredX(font, s, mcx), ty, Ink.Black);
+    print(c, font, s2, centeredX(font, s2, tcx), ty, Ink.Black);
   }
 
   // ── almanac (right): measure with the largest fonts that fit, then share the slack ──
-  c.dottedV(split + (large ? 10 : 4), f.top + 14, H - 14, Ink.Black, 1, 3);
-  const x0 = split + (large ? 30 : 12), x1 = W - m, cw = x1 - x0;
+  if (tall) c.dottedH(m, W - m, f.top + bandH, Ink.Black, 1, 3);
+  else c.dottedV(split + (large ? 10 : 4), f.top + 14, H - 14, Ink.Black, 1, 3);
+  const x0 = tall ? m : split + (large ? 30 : 12), x1 = W - m, cw = x1 - x0;
   const rows: [string, string][] = [
     ["冲煞", `冲${L.getDayChongDesc()} 煞${L.getDaySha()}`],
     ["吉神", `喜神${L.getDayPositionXiDesc()} 福神${L.getDayPositionFuDesc()} 财神${L.getDayPositionCaiDesc()}`],
@@ -127,7 +133,7 @@ export function renderAlmanac(panel: Panel, ctx: ScreenContext) {
   const sets: { head: RefFont; body: RefFont }[] = large
     ? [{ head: bigRef("wenkai", 32), body: bigRef("wenkai", 24) }, { head: bigRef("wenkai", 28), body: wqy12 }, { head: wqy12, body: wqy12 }, { head: wqy12, body: wqy9 }]
     : [{ head: cjkAt(false, 24), body: wqy9 }, { head: wqy12, body: wqy9 }];
-  const top2 = f.top + (large ? 10 : 6), bottom2 = H - (large ? 10 : 6);
+  const top2 = f.top + bandH + (large ? 10 : 6), bottom2 = H - (large ? 10 : 6);
   type Block = { h: number; draw: (yy: number) => void };
   const build = (head: RefFont, body: RefFont): Block[] => {
     const lh = Math.round((body.ascent - body.descent) * 1.3);
@@ -184,4 +190,5 @@ export const almanacMode: Screen = {
   name: "月相黄历",
   description: "今天的月相（月龄、照亮比例、下次满月/新月）和老黄历（宜忌、冲煞、吉神方位等）。",
   render: renderAlmanac,
+  portrait: true,
 };
