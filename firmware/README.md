@@ -19,13 +19,13 @@ ESP32 墨水屏的固件，在 InkSight 固件的基础上改的。它做的事�
 
 ## 支持的屏幕
 
-上游支持的面板和开发板都在 `boards/other_panels.ini` 里，C3 的环境都带 `_led5` 变体。除了 2.9 寸，每种屏都能显示后端的画面，也都有离线日历，日历和服务器画的一个像素都不差（用 `tools/calendar_test` 对比过）。
+上游支持的面板和开发板都在 `boards/other_panels.ini` 里，C3 的环境都带 `_led5` 变体。`_yd_s3_n16r8` 是 YD-ESP32-S3 N16R8 开发板（引脚见 `src/config.h`，串口日志走板上的 USB 转串口口），还没在真机上试过。除了 2.9 寸，每种屏都能显示后端的画面，也都有离线日历，日历和服务器画的一个像素都不差（用 `tools/calendar_test` 对比过）。
 
 | 屏幕 | 颜色 | 编译环境 | 画面怎么写进屏幕 | 实测 |
 |---|---|---|---|---|
-| 3.98 寸 SE0398NZ07 A0 | 黑白黄红 | `epd_398_se0398nz07a0_c3_promini`、`_wroom32e` | 收一行写一行，不占整帧内存 | 是 |
-| 3.98 寸 SE0398NZ07 A1 | 黑白黄红 | `epd_398_se0398nz07a1_c3_promini` | 同上 | 否 |
-| 4.2 寸 HINK SSD1683 | 黑白红 | `epd_42_hink_ssd1683_c3_promini`、`_wroom32e` | 收一行写一行 | 是 |
+| 3.98 寸 SE0398NZ07 A0 | 黑白黄红 | `epd_398_se0398nz07a0_c3_promini`、`_wroom32e`、`_yd_s3_n16r8` | 收一行写一行，不占整帧内存 | 是 |
+| 3.98 寸 SE0398NZ07 A1 | 黑白黄红 | `epd_398_se0398nz07a1_c3_promini`、`_yd_s3_n16r8` | 同上 | 否 |
+| 4.2 寸 HINK SSD1683 | 黑白红 | `epd_42_hink_ssd1683_c3_promini`、`_wroom32e`、`_yd_s3_n16r8` | 收一行写一行 | 是 |
 | 5.83 寸 UC8179（微雪 V2） | 黑白红 | `epd_583_uc8179_bwr_c3_promini`、`_bwr_wroom32e` | 黑白部分逐行写，红色部分先放内存（39 KB） | 否 |
 | 7.5 寸 GDEY075Z08 | 黑白红 | `epd_75_uc8179_c3_promini`、`_wroom32e` | 同上，红色部分 48 KB | 否 |
 | 4.2 寸 GDEM042F52 | 黑白黄红 | `epd_42_gdem042f52_jd79668_c3_promini`、`_c3_std`、`_wroom32e` | 整帧放内存，30 KB | 否 |

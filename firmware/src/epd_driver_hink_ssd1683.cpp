@@ -138,6 +138,9 @@ static void ssd1683InitController() {
     // The dummy MISO must not be the LED: upstream C3 boards have the LED on GPIO3,
     // local *_led5 boards on GPIO5, and the other one of the two is free.
     SPI.begin(PIN_EPD_SCK, (PIN_LED == 3) ? 5 : 3, PIN_EPD_MOSI, PIN_EPD_CS);
+#elif defined(BOARD_PROFILE_YD_ESP32_S3_N16R8)
+    // the same caution on the S3: GPIO13 (its default FSPI MISO), not connected
+    SPI.begin(PIN_EPD_SCK, 13, PIN_EPD_MOSI, PIN_EPD_CS);
 #else
     SPI.begin(PIN_EPD_SCK, -1, PIN_EPD_MOSI, PIN_EPD_CS);
 #endif
