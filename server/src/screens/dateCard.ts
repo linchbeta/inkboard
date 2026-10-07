@@ -7,6 +7,8 @@
 // On large panels (3.98") the big number moves to the left half and the right half gets
 // an almanac column: holiday countdown, lunar date with stems/branches, 宜/忌, today's
 // weather and the year's progress. Small panels (4.2") keep the single-column card.
+// Upright, the large card puts the number on top and the almanac column under it.
+import { isLarge } from "./common.js";
 import { Canvas } from "../render/canvas.js";
 import { refFonts, width, print, centeredX, centeredAt, drawBattery, type RefFont } from "../render/reftext.js";
 import { draw7Number, size7 } from "../render/sevenseg.js";
@@ -39,7 +41,7 @@ export function renderDateCard(panel: Panel, ctx: ScreenContext, layoutOut?: Dat
   const { helvB18, wqy12, wqy9 } = refFonts();
   const W = panel.width;
   const H = panel.height;
-  const large = H >= 400;
+  const large = isLarge(panel);
   const c = new Canvas(W, H);
   const now = ctx.now;
   const y = now.getFullYear(), m = now.getMonth() + 1, d = now.getDate();
@@ -67,10 +69,12 @@ export function renderDateCard(panel: Panel, ctx: ScreenContext, layoutOut?: Dat
   const note = [festival, hol === "off" ? "休" : hol === "work" ? "班" : undefined].filter(Boolean).join(" · ");
   const noteH = note ? 16 + (large ? 16 : 8) : 0; // 16px line + gap
   const nD = d > 9 ? 2 : 1;
-  // large: left column [padding, splitX); small: full width
-  const splitX = large ? Math.round(W * 0.52) : W;
-  const cx = large ? Math.round((padding + splitX) / 2) : W / 2;
-  const avail = bodyBottom - bodyTop - noteH - (large ? 40 : 20);
+  // large: left column [padding, splitX); small: full width; upright large: the top part
+  const tall = large && H > W;
+  const splitX = large && !tall ? Math.round(W * 0.52) : W;
+  const cx = large && !tall ? Math.round((padding + splitX) / 2) : W / 2;
+  const numBottom = tall ? bodyTop + Math.round((bodyBottom - bodyTop) * 0.4) : bodyBottom;
+  const avail = numBottom - bodyTop - noteH - (large ? 40 : 20);
   let cS = Math.max(2, Math.floor((avail - 4) / 20));
   if (large) while (cS > 2 && size7(cS, 2).w > splitX - padding - 40) cS--; // "28" must fit the column too
   const sz = size7(cS, nD);
@@ -89,7 +93,7 @@ export function renderDateCard(panel: Panel, ctx: ScreenContext, layoutOut?: Dat
   const inkW = ix1 - ix0 + 1, inkH = iy1 - iy0 + 1;
   const blockH = inkH + noteH;
   const nx = Math.round(cx - inkW / 2) - ix0;
-  const ny = Math.round(bodyTop + (bodyBottom - bodyTop - blockH) / 2) - iy0;
+  const ny = Math.round(bodyTop + (numBottom - bodyTop - blockH) / 2) - iy0;
   for (let yy = iy0; yy <= iy1; yy++) for (let xx = ix0; xx <= ix1; xx++) {
     if (tmp.get(xx, yy) === numInk) c.set(nx + xx, ny + yy, numInk);
   }
@@ -99,7 +103,10 @@ export function renderDateCard(panel: Panel, ctx: ScreenContext, layoutOut?: Dat
   }
   const layout: DateCardLayout = { body: { y0: bodyTop, y1: bodyBottom }, cx, noteH,
                                    number: { x0: nx + ix0, y0: ny + iy0, w: inkW, h: inkH, ink: numInk }, boxes: [] };
-  if (large) {
+  if (tall) {
+    c.dottedH(padding, W - padding, numBottom, Ink.Black, 1, 3);
+    almanacColumn(c, ctx, padding, W - padding, numBottom + 20, bodyBottom - 18, layout.boxes);
+  } else if (large) {
     c.dottedV(splitX, bodyTop + 22, bodyBottom - 21, Ink.Black, 1, 3);
     almanacColumn(c, ctx, splitX + 24, W - padding, bodyTop + 20, bodyBottom - 18, layout.boxes);
   }

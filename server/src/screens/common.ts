@@ -22,11 +22,14 @@ export function screenWithHeader(panel: Panel, ctx: ScreenContext, title: string
   const c = new Canvas(W, H);
   const m = large ? 20 : 10;
   const base = large ? 36 : 22;
-  let x = print(c, wqy12, title, m, base, Ink.Black);
-  if (subtitle) print(c, wqy9, subtitle, x + 10, base, Ink.Black);
+  const x = print(c, wqy12, title, m, base, Ink.Black);
   const now = ctx.now;
-  const date = `${now.getMonth() + 1}月${now.getDate()}日 星期${WEEKDAY[now.getDay()]}`;
   const bw = ctx.batteryV !== undefined ? 60 : 0;
+  // narrow (an upright 4.2"): the date without the weekday, the subtitle cut to fit
+  let date = `${now.getMonth() + 1}月${now.getDate()}日 星期${WEEKDAY[now.getDay()]}`;
+  const room = () => W - m - bw - width(wqy9, date) - 12 - (x + 10);
+  if (subtitle && room() < width(wqy9, subtitle)) date = `${now.getMonth() + 1}月${now.getDate()}日`;
+  if (subtitle && room() > 12) print(c, wqy9, ellipsize(wqy9, subtitle, room()), x + 10, base, Ink.Black);
   print(c, wqy9, date, W - m - bw - width(wqy9, date), base, Ink.Black);
   if (ctx.batteryV !== undefined) drawBattery(c, W - m, base - 10, ctx.batteryV);
   const rule = base + (large ? 12 : 8);
@@ -113,6 +116,17 @@ export function ellipsize(rf: RefFont, s: string, maxW: number): string {
   if (width(rf, s) <= maxW) return s;
   while (s.length > 1 && width(rf, s + "…") > maxW) s = s.slice(0, -1);
   return s + "…";
+}
+
+/**
+ * Left edge for a block of lines (their widths) centred on the screen, under a quotation
+ * mark at the top left: the block keeps clear of the mark (starts at `afterMark`) when its
+ * first line starts above `markBottom`.
+ */
+export function centeredBlockX(widths: number[], W: number, m: number, afterMark: number, top: number, markBottom: number): number {
+  const bw = Math.max(0, ...widths);
+  const x = Math.max(m, Math.round((W - bw) / 2));
+  return top < markBottom ? Math.max(x, Math.min(afterMark, W - m - bw)) : x;
 }
 
 /** A large opening quotation mark ("❝"-like: two filled drops), top-left at (x, y). */

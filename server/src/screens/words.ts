@@ -200,6 +200,7 @@ export const wordsMode: Screen = {
   description: "单词卡（英、法、德、西、意、葡、日、韩）：音标、释义、例句和翻译；按课本或考试词库学新词，学过的词按遗忘曲线安排复习。词库和查词接口可换，也可用自己的单词表。",
   config: CONFIG,
   render: renderWords,
+  portrait: true,
   prepare: async (db, now, params) => {
     const cfg = getModeConfig(db, "words", CONFIG) as unknown as StudySettings;
     const card = await studyCard(db, cfg, now, params?.advance === "1");

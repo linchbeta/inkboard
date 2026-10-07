@@ -2,6 +2,7 @@
 // "frame" style: the photo on a white mat with a hairline keyline and a museum-label
 // caption (red marker, title, date); "full" style: edge to edge. Without photos the
 // built-in test chart is shown, so dithering can be judged right away.
+import { isLarge } from "./common.js";
 import { Canvas } from "../render/canvas.js";
 import { refFonts, width, print } from "../render/reftext.js";
 import { coverResize, ditherImage, testChart, rotate, crop } from "../render/image.js";
@@ -43,7 +44,7 @@ export function photoArea(panel: Panel, style: "frame" | "full", corner: PhotoCo
   const W = panel.width, H = panel.height;
   const chosen = cornerPx(panel, corner); // square panels: the chosen rounding
   if (style === "full") return { x: 0, y: 0, w: W, h: H, radius: chosen, keyline: false, capH: 0, capInset: 0 };
-  const large = H >= 400;
+  const large = isLarge(panel);
   const rounded = panel.cornerRadius > 0;
   const m = rounded ? Math.round(panel.cornerRadius * 0.67) : large ? 20 : 10; // mat
   const capH = large ? 44 : 26;
@@ -70,7 +71,7 @@ function roundCorners(c: Canvas, x: number, y: number, w: number, h: number, r: 
 export function renderPhoto(panel: Panel, ctx: ScreenContext): Canvas {
   const { wqy12, wqy9 } = refFonts();
   const W = panel.width, H = panel.height;
-  const large = H >= 400;
+  const large = isLarge(panel);
   const c = new Canvas(W, H);
   const p: PhotoContext = ctx.photo ?? { title: "抖动测试图 · Floyd-Steinberg", image: (chart ??= testChart()), style: "frame" };
   const a = photoArea(panel, p.style, p.corner);

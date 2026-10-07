@@ -7,6 +7,7 @@ import { getModeConfig, type ConfigField } from "../data/modeConfig.js";
 import type { ScreenContext } from "./testPattern.js";
 import type { Screen } from "./screen.js";
 import { screenWithHeader, wrapText, emptyNote } from "./common.js";
+import { cjkAt } from "../render/typography.js";
 
 const CONFIG: ConfigField[] = [{
   key: "title", label: "标题", type: "text", default: "待办", placeholder: "待办",
@@ -68,11 +69,12 @@ export function renderTodo(panel: Panel, ctx: ScreenContext) {
   if (!all.length) { emptyNote(f, "在后台\"待办\"页面添加要做的事"); return c; }
 
   // 3.98": WenKai 28 / 24 px when the whole list fits that way, else WenQuanYi 16 px
-  const draw = (font: RefFont, paint: boolean): number => {
+  const tall = H > W;  // upright: one column, as long as the list fits that way
+  const draw = (font: RefFont, paint: boolean, oneCol = tall): number => {
     const fh = font.ascent - font.descent;
     const lineH = Math.round(fh * 1.35), itemGap = Math.round(fh * 0.35);
     const box = Math.round(font.ascent * 0.95);
-    const cols = large && groups.length > 1 ? 2 : 1;
+    const cols = large && groups.length > 1 && !oneCol ? 2 : 1;
     const gap = 28;
     const colW = Math.floor((W - 2 * m - (cols - 1) * gap) / cols);
     const tx0 = box + Math.round(fh * 0.6);
@@ -120,9 +122,14 @@ export function renderTodo(panel: Panel, ctx: ScreenContext) {
     }
     return hidden;
   };
-  const candidates: RefFont[] = large ? [bigRef("wenkai", 28), bigRef("wenkai", 24), wqy12] : [wqy9];
-  const font = candidates.find((rf) => draw(rf, false) === 0) ?? candidates[candidates.length - 1];
-  const hidden = draw(font, true);
+  // upright, the panel's long side gives room for larger type (the 4.2" too)
+  const candidates: RefFont[] = large ? [bigRef("wenkai", 28), bigRef("wenkai", 24), wqy12]
+    : tall ? [cjkAt(false, 24), wqy12, wqy9] : [wqy9];
+  let oneCol = tall;
+  let font = candidates.find((rf) => draw(rf, false, oneCol) === 0);
+  if (!font && tall && large) { oneCol = false; font = candidates.find((rf) => draw(rf, false, false) === 0); }
+  font ??= candidates[candidates.length - 1];
+  const hidden = draw(font, true, oneCol);
   if (hidden) {
     const s = `还有 ${hidden} 项未显示`;
     print(c, wqy9, s, W - m - width(wqy9, s), H - 4, Ink.Black);
@@ -135,6 +142,7 @@ export const todoMode: Screen = {
   description: "按人分组的清单，比如孩子的作业、家务；完成的打勾划掉。",
   config: CONFIG,
   render: renderTodo,
+  portrait: true,
   prepare: async (db) => {
     const cfg = getModeConfig(db, "todo", CONFIG);
     return { data: { title: cfg.title, groups: parseTodo(cfg.list) } };

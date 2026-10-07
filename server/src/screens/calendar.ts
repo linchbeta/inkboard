@@ -4,6 +4,7 @@
 //  - solar terms use exact dates (the reference approximates the 2nd term as 1st + 15 days)
 //  - holidays come from all bundled holiday-cn years, not only the configured one
 //  - no Wi-Fi name (the server does not know it); battery shown when the device reports it
+import { isLarge } from "./common.js";
 import { Canvas } from "../render/canvas.js";
 import { fillCircle, drawCircle, fillRoundRect, dottedLine } from "../render/gfx.js";
 import { type RefFont, refFonts, height, width, inkBounds, print, centeredX, centeredAt, drawBattery } from "../render/reftext.js";
@@ -43,7 +44,12 @@ export function renderCalendar(panel: Panel, ctx: ScreenContext, opts: CalendarO
 
   const W = panel.width;
   const H = panel.height;
-  const large = H >= 400; // reference: large_layout = height >= 400
+  const large = isLarge(panel); // reference: large_layout = height >= 400 (the short side, so upright too)
+  // An upright 4.2" has ~41 px columns: 休 / 班 move from the left of the date (where they
+  // would run into the cell before) to the cell's top left corner, and the rest of the cell
+  // moves down a little to make room. The large panels upright keep them where they are.
+  // Same for the firmware's copy.
+  const tall = H > W && !large;
   const weekStart = opts.weekStart ?? 0;
   const c = new Canvas(W, H);
   const check = (what: string, rf: RefFont, s: string, x: number, baseline: number, cx: number, cy?: number,
@@ -148,7 +154,8 @@ export function renderCalendar(panel: Panel, ctx: ScreenContext, opts: CalendarO
       let cr = large ? 15 : 11;
       if (rows > 5) cr -= 1;
       const bx = x + Math.floor((bw - 2 * cr) / 2) + displayWeek * bw;
-      const by = y + Math.floor((bh - 2 * cr) / 2) + Math.floor((i + adjustedFirstDay) / 7) * bh + 3;
+      const cellTop = y + Math.floor((i + adjustedFirstDay) / 7) * bh;
+      const by = cellTop + Math.floor((bh - 2 * cr) / 2) + 3 + (tall ? 5 : 0);
 
       // Date and lunar label: vertical positions as in the reference (rows stay aligned),
       // horizontally centred on the column by ink (the reference's width maths and its +1 px
@@ -236,9 +243,9 @@ export function renderCalendar(panel: Panel, ctx: ScreenContext, opts: CalendarO
         const holInk = hol === "work" ? Ink.Black : Ink.Red;
         if (isToday) {
           const rr = large ? 10 : 8;
-          // Reference x, pushed left if the badge would cover the date.
-          const rx = Math.min(bx - (large ? 10 : 5), dayInk.x0 - 2 - rr);
-          const ry = by - 2;
+          // Reference x, pushed left if the badge would cover the date (upright: the corner).
+          const rx = tall ? x + displayWeek * bw + rr + 3 : Math.min(bx - (large ? 10 : 5), dayInk.x0 - 2 - rr);
+          const ry = tall ? cellTop + rr + 3 : by - 2;
           fillCircle(c, rx, ry, rr, Ink.White);
           drawCircle(c, rx, ry, rr, Ink.Red);
           const p = centeredAt(wqy9, text, rx, ry);
@@ -250,9 +257,10 @@ export function renderCalendar(panel: Panel, ctx: ScreenContext, opts: CalendarO
         } else {
           // Reference position, pushed left if it would touch the date.
           const ink = inkBounds(wqy9, text, 0, 0)!;
-          const hx = Math.min(bx - (large ? 20 : 11), dayInk.x0 - 2 - ink.x1);
-          print(c, wqy9, text, hx, by + 3, holInk);
-          box(day, text, wqy9, text, hx, by + 3);
+          const hx = tall ? x + displayWeek * bw + 4 : Math.min(bx - (large ? 20 : 11), dayInk.x0 - 2 - ink.x1);
+          const hb = tall ? cellTop + 4 - ink.y0 : by + 3;
+          print(c, wqy9, text, hx, hb, holInk);
+          box(day, text, wqy9, text, hx, hb);
         }
       }
     }

@@ -184,6 +184,7 @@ export const poetryMode: Screen = {
     },
   }],
   render: renderPoetry,
+  portrait: true,
   prepare: async (db, now, params) => {
     const pick = getModeConfig(db, "poetry", CONFIG).pick;
     if (pick.startsWith("poem:")) {

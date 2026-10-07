@@ -15,7 +15,7 @@ import type { CalEvent } from "../data/ics.js";
 import { currentDevice } from "../scope.js";
 import type { ScreenContext } from "./testPattern.js";
 import type { Screen } from "./screen.js";
-import { wrapText, ellipsize, drawQuoteMark } from "./common.js";
+import { wrapText, ellipsize, drawQuoteMark, isLarge } from "./common.js";
 import { agendaMode, groupByDay } from "./agenda.js";
 import { todoMode, type TodoGroup } from "./todo.js";
 
@@ -69,14 +69,17 @@ function sections(data: DashData, now: Date, font: RefFont, w: number, large: bo
 
 export function renderDashboard(panel: Panel, ctx: ScreenContext): Canvas {
   const { wqy12, wqy9 } = refFonts();
-  const W = panel.width, H = panel.height, large = H >= 400;
+  const W = panel.width, H = panel.height, large = isLarge(panel);
   const c = new Canvas(W, H);
   const data = (ctx.data as DashData | undefined) ?? { messages: [], todo: [], events: [], agenda: false };
   const now = ctx.now, y = now.getFullYear(), mo = now.getMonth() + 1, d = now.getDate();
   const pad = large ? 20 : 10;
 
   // ── left: the date, lunar date, weather ──
-  const lw = large ? 250 : 136, cx = Math.round(lw / 2);
+  // upright: a band across the top instead, the date on the left half, the weather on the
+  // right, the sections under it
+  const tall = H > W;
+  const lw = tall ? W : large ? 250 : 136, cx = tall ? Math.round(W / 4) : Math.round(lw / 2);
   const off = now.getDay() === 0 || now.getDay() === 6 ? holidayOf(y, mo, d) !== "work" : holidayOf(y, mo, d) === "off";
   const head = `${y}年${mo}月 星期${WEEKDAY[now.getDay()]}`;
   const hf = large ? wqy12 : wqy9;
@@ -93,11 +96,44 @@ export function renderDashboard(panel: Panel, ctx: ScreenContext): Canvas {
   const ex = print(c, hf, lunar, lx, yy, Ink.Black);
   if (fest) print(c, hf, ` ${fest}`, ex, yy, Ink.Red);
   yy += large ? 22 : 12;
-  c.dottedH(pad, lw - pad, yy, Ink.Black, 1, 3);
+  let bandBottom = yy;
+  if (!tall) c.dottedH(pad, lw - pad, yy, Ink.Black, 1, 3);
 
   const w = ctx.weather;
   const wTop = yy + (large ? 18 : 8);
-  if (w) {
+  if (tall) {
+    // the weather in the right half of the band: icon and temperature, then two lines
+    const wx = Math.round(W * 3 / 4), half = Math.round(W / 2) - 2 * pad;
+    const top = pad + (large ? 30 : 18);  // under the battery
+    if (w) {
+      const desc = describeCode(w.current.code);
+      const icon = large ? 64 : 34;
+      const t = String(Math.round(w.current.temp));
+      const tf = bigRef("barlow", large ? 56 : 32);
+      const rowW = icon + (large ? 10 : 4) + width(tf, t) + 2 + width(wqy12, "℃");
+      const ix = Math.round(wx - rowW / 2);
+      drawWeatherIcon(c, desc.icon, w.current.isDay, ix, top, icon);
+      const tb = top + Math.round(icon / 2 + tf.ascent / 2);
+      const tx = print(c, tf, t, ix + icon + (large ? 10 : 4), tb, Ink.Black);
+      print(c, wqy12, "℃", tx + 2, tb - tf.ascent + wqy12.ascent, Ink.Black);
+      const today = w.daily[0];
+      const lvl = windLevel(w.current.windKmh);
+      let ly = top + icon + (large ? 14 : 8) + hf.ascent;
+      for (const line of [`${desc.text} ${Math.round(today.tmin)}～${Math.round(today.tmax)}℃`,
+        `湿度${w.current.humidity}% ${lvl <= 2 ? "微风" : `${windDirection(w.current.windDir)}${lvl}级`}${today.pop >= 30 ? ` 降水${today.pop}%` : ""}`]) {
+        const t2 = ellipsize(hf, line, half);
+        print(c, hf, t2, centeredX(hf, t2, wx), ly, Ink.Black);
+        ly += large ? 24 : 15;
+      }
+      bandBottom = Math.max(bandBottom, ly - (large ? 10 : 6));
+    } else {
+      const note = ctx.weatherNote ?? "未设置天气城市";
+      wrapText(wqy9, note, half, 3).forEach((s2, i) => print(c, wqy9, s2, centeredX(wqy9, s2, wx), top + 20 + i * 16, Ink.Black));
+    }
+    c.dottedV(Math.round(W / 2), pad + (large ? 10 : 6), bandBottom - (large ? 4 : 2), Ink.Black, 1, 3);
+    bandBottom += large ? 14 : 8;
+    c.dottedH(pad, W - pad, bandBottom, Ink.Black, 1, 3);
+  } else if (w) {
     const desc = describeCode(w.current.code);
     const icon = large ? 72 : 40;
     const t = String(Math.round(w.current.temp));
@@ -165,32 +201,34 @@ export function renderDashboard(panel: Panel, ctx: ScreenContext): Canvas {
     const note = ctx.weatherNote ?? "未设置天气城市";
     wrapText(wqy9, note, lw - 2 * pad, 3).forEach((s, i) => print(c, wqy9, s, centeredX(wqy9, s, cx), wTop + 14 + i * 16, Ink.Black));
   }
-  c.dottedV(lw, pad, H - pad, Ink.Black, 1, 3);
+  if (!tall) c.dottedV(lw, pad, H - pad, Ink.Black, 1, 3);
 
-  // ── right: message, events, to-dos ──
-  const x0 = lw + (large ? 22 : 10), x1 = W - pad;
+  // ── right: message, events, to-dos (upright: under the band) ──
+  const x0 = tall ? pad : lw + (large ? 22 : 10), x1 = W - pad;
+  const secTop = tall ? bandBottom + (large ? 18 : 10) : pad;
   const font = large ? cjkAt(true, 24) : wqy12;
   const lh = large ? 36 : 20, headH = large ? 34 : 22, gap = large ? 14 : 6;
   const lead = (s: Section) => Math.max(0, ...s.lines.map((ln) => (ln.lead ? width(wqy9, ln.lead.text) + (large ? 12 : 6) : 0)));
   const box = large ? 16 : 10;
   // battery top right, where the other screens have it (header baseline 36 / 22, common.ts)
-  const batteryW = ctx.batteryV !== undefined ? 66 : 0;
+  const batteryW = ctx.batteryV !== undefined && !tall ? 66 : 0;
   if (ctx.batteryV !== undefined) drawBattery(c, W - pad, (large ? 36 : 22) - 10, ctx.batteryV);
   const secs = sections(data, now, font, x1 - x0, large);
   if (!secs.length) {
     const s = "在后台给这块屏留言、添加日程或待办";
     const lines = wrapText(wqy12, s, x1 - x0 - 20);
-    lines.forEach((t, i) => print(c, wqy12, t, centeredX(wqy12, t, (x0 + x1) / 2), Math.round(H / 3) + i * 22, Ink.Black));
-    footer(Math.round(H / 3) + lines.length * 22 + 10);
+    const ey = tall ? secTop + 60 : Math.round(H / 3);
+    lines.forEach((t, i) => print(c, wqy12, t, centeredX(wqy12, t, (x0 + x1) / 2), ey + i * 22, Ink.Black));
+    footer(ey + lines.length * 22 + 10);
     return c;
   }
   // lines per section: one each first, then in order up to each section's cap
-  let left = Math.floor((H - 2 * pad - secs.length * headH - (secs.length - 1) * gap) / lh);
+  let left = Math.floor((H - pad - secTop - secs.length * headH - (secs.length - 1) * gap) / lh);
   const shown = secs.map(() => 0);
   secs.forEach((s, i) => { if (left > 0 && s.lines.length) { shown[i] = 1; left--; } });
   secs.forEach((s, i) => { const more = Math.max(0, Math.min(left, Math.min(s.cap, s.lines.length) - shown[i])); shown[i] += more; left -= more; });
 
-  let top = pad;
+  let top = secTop;
   secs.forEach((s, i) => {
     // red title tag, subtitle, rule
     const tf = large ? wqy12 : wqy9;
@@ -266,6 +304,7 @@ export const dashboardMode: Screen = {
   name: "看板",
   description: "一屏看全：日期、农历、天气，加上最新留言、今天的日程和没做完的待办（取自这块屏的留言、日程、待办内容）；下方空余时显示下个假期和一句一言。",
   render: renderDashboard,
+  portrait: true,
   prepare: async (db, now, params) => {
     const [weather, agenda, todo, quote] = await Promise.all([
       getWeather(db, now).catch(() => undefined),

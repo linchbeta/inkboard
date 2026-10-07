@@ -62,10 +62,10 @@ async function photoContext(db: Db, now: Date, params?: Record<string, string>):
 
 export const SCREENS: Record<string, Screen> = {
   test: { name: "测试画面", render: renderTestPattern, portrait: true },
-  calendar: { name: "日历", render: (p, ctx) => renderCalendar(p, ctx) },
-  datecard: { name: "日期牌", render: (p, ctx) => renderDateCard(p, ctx), prepare: weatherContext },
-  weather: { name: "天气", render: renderWeather, prepare: weatherContext },
-  photo: { name: "相框", description: "相册里的照片，按屏幕颜色抖动；每块屏可以播放不同的照片。", config: PHOTO_CONFIG, render: renderPhoto, prepare: photoContext },
+  calendar: { name: "日历", render: (p, ctx) => renderCalendar(p, ctx), portrait: true },
+  datecard: { name: "日期牌", render: (p, ctx) => renderDateCard(p, ctx), prepare: weatherContext, portrait: true },
+  weather: { name: "天气", render: renderWeather, prepare: weatherContext, portrait: true },
+  photo: { name: "相框", description: "相册里的照片，按屏幕颜色抖动；每块屏可以播放不同的照片。", config: PHOTO_CONFIG, render: renderPhoto, prepare: photoContext, portrait: true },
   yearprogress: yearProgressMode,
   countdown: countdownMode,
   messages: messagesMode,

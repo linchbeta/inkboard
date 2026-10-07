@@ -1,6 +1,7 @@
 // Weather screen: current conditions (icon + big 7-segment temperature), next 3 days,
 // and a 24-hour temperature curve with precipitation-probability bars.
 // Small numbers use WenQuanYi (not Helvetica, which is reserved for bold calendar numbers).
+import { isLarge } from "./common.js";
 import { Canvas } from "../render/canvas.js";
 import { refFonts, width, print, centeredX, centeredAt, drawBattery, type RefFont } from "../render/reftext.js";
 import { fonts } from "../render/fonts.js";
@@ -44,7 +45,7 @@ export function renderWeather(panel: Panel, ctx: ScreenContext): Canvas {
   const { wqy12, wqy9 } = refFonts();
   const W = panel.width;
   const H = panel.height;
-  const large = H >= 400;
+  const large = isLarge(panel);
   const c = new Canvas(W, H);
   const w = ctx.weather;
   const now = ctx.now;
@@ -99,9 +100,32 @@ export function renderWeather(panel: Panel, ctx: ScreenContext): Canvas {
   });
   const currentBottom = Math.max(curTop + iconSize, textTop + (lines.length - 1) * lineStep + 4);
 
-  // ── Next 3 days (right): columns on 3.98", rows on 4.2" (columns would be ~50 px) ──
+  // ── Next 3 days (right): columns on 3.98", rows on 4.2" (columns would be ~50 px);
+  //    upright: columns across the width under the current conditions ──
+  const tall = H > W;
   const fx0 = large ? 410 : 236;
-  if (large) {
+  let forecastBottom = 0;
+  if (tall) {
+    const top = currentBottom + (large ? 18 : 10);
+    c.dottedH(m, W - m, top - (large ? 8 : 5), Ink.Black, 1, 3);
+    const colW = (W - 2 * m) / 3;
+    const dIcon = large ? 56 : 30, lab = large ? lf : wqy9, step = large ? 20 : 14;
+    for (let i = 1; i <= 3 && i < w.daily.length; i++) {
+      const d = w.daily[i];
+      const cx = Math.round(m + (i - 0.5) * colW);
+      const label = dayLabel(i, d.date);
+      print(c, lab, label, centeredX(lab, label, cx), top + lab.ascent + 2, Ink.Black);
+      const iy = top + lab.ascent + (large ? 12 : 8);
+      drawWeatherIcon(c, describeCode(d.code).icon, true, Math.round(cx - dIcon / 2), iy, dIcon);
+      const range = `${Math.round(d.tmin)}～${Math.round(d.tmax)}℃`;
+      const ry = iy + dIcon + (large ? 20 : 13);
+      print(c, wqy9, range, centeredX(wqy9, range, cx), ry, Ink.Black);
+      const t = describeCode(d.code).text + (d.pop >= 10 ? ` ${d.pop}%` : "");
+      print(c, wqy9, t, centeredX(wqy9, t, cx), ry + step - (large ? 4 : 0), Ink.Black);
+      if (i > 1) c.dottedV(Math.round(m + (i - 1) * colW), top, ry + step, Ink.Black, 1, 3);
+      forecastBottom = ry + step;
+    }
+  } else if (large) {
     const colW = Math.floor((W - m - fx0) / 3);
     const dIcon = 64;
     for (let i = 1; i <= 3 && i < w.daily.length; i++) {
@@ -137,7 +161,7 @@ export function renderWeather(panel: Panel, ctx: ScreenContext): Canvas {
   }
 
   // ── 24-hour chart (bottom) ──
-  const chartTop = Math.max(currentBottom, curTop + (large ? 176 : 100)) + (large ? 16 : 6);
+  const chartTop = (tall ? forecastBottom + (large ? 10 : 4) : Math.max(currentBottom, curTop + (large ? 176 : 100))) + (large ? 16 : 6);
   c.rect(m, chartTop - (large ? 8 : 4), W - m, chartTop - (large ? 8 : 4) + 1, Ink.Black);
   drawHourlyChart(c, w, m, chartTop, W - m, H - (large ? 10 : 4), large, panel.colors >= 4);
   return c;

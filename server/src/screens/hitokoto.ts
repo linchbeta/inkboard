@@ -8,7 +8,7 @@ import { getModeConfig, type ConfigField } from "../data/modeConfig.js";
 import { hitokoto, attribution, TYPES, CATEGORIES, LENGTHS, type Quote } from "../data/hitokoto.js";
 import type { ScreenContext } from "./testPattern.js";
 import type { Screen } from "./screen.js";
-import { screenWithHeader, wrapText, ellipsize, drawQuoteMark } from "./common.js";
+import { screenWithHeader, wrapText, ellipsize, drawQuoteMark, centeredBlockX } from "./common.js";
 
 const CONFIG: ConfigField[] = [
   { key: "categories", label: "类别", type: "select", default: "", options: CATEGORIES },
@@ -44,12 +44,11 @@ export function renderHitokoto(panel: Panel, ctx: ScreenContext) {
   const font = fonts.find((rf) => wrapText(rf, q.text, textW).length * lineH(rf) <= area) ?? fonts[fonts.length - 1];
   const lh = lineH(font);
   const lines = wrapText(font, q.text, textW, Math.max(1, Math.floor(area / lh)));
-  // a single short line is centred, longer text reads from the left
-  const single = lines.length === 1;
+  // the block centred on the screen (lines left-aligned in it), clear of the quotation mark
   let y = top + Math.max(0, Math.round((area - lines.length * lh) / 2)) + font.ascent;
+  const bx = centeredBlockX(lines.map((l) => width(font, l)), W, m, textX, y - font.ascent, f.top + (large ? 52 : 32));
   for (const l of lines) {
-    const x = single ? Math.max(textX, Math.round((W - width(font, l)) / 2)) : textX;
-    print(c, font, l, x, y, Ink.Black);
+    print(c, font, l, bx, y, Ink.Black);
     y += lh;
   }
 
@@ -70,6 +69,7 @@ export const hitokotoMode: Screen = {
   description: "一句话：动画、文学、诗词、影视、哲学……（来自一言 hitokoto.cn），长短句都按能放下的最大字号排；每次刷新换一句。",
   config: CONFIG,
   render: renderHitokoto,
+  portrait: true,
   prepare: async (db, _now, params) => {
     const cfg = getModeConfig(db, "hitokoto", CONFIG);
     return { data: await hitokoto(db, { categories: cfg.categories, length: cfg.length, advance: params?.advance === "1" }) };
