@@ -319,7 +319,9 @@ async function contentTab(db: Db, d: Device, s: DeviceSettings, now: Date, cityQ
     const sc = SCREENS[m];
     const group = syncGroup(db, d.mac, m);
     const synced = group.slice(1);
-    const pill = !hasContent(m) ? "" : synced.length ? html`<span class="pill acc">与 ${names(db, synced)} 同步</span>` : several ? html`<span class="pill">仅本屏</span>` : "";
+    // 日程 / 待办 shown only because the 看板 uses them: say so (they are not in the playlist)
+    const forDash = !shown.includes(m) ? html`<span class="pill">看板用到，不在播放列表中</span>` : "";
+    const pill = forDash ? forDash : !hasContent(m) ? "" : synced.length ? html`<span class="pill acc">与 ${names(db, synced)} 同步</span>` : several ? html`<span class="pill">仅本屏</span>` : "";
     const editor = contentEditor(db, d, m, now, back(m), { cityQuery, found, searchError });
     const sync = hasContent(m) && several ? html`<details style="margin-top:14px"><summary>多屏同步${synced.length ? `（${synced.length} 块）` : ""}</summary>
       <form method="post" action="/admin/devices/${d.mac}/sync/${m}" style="margin-top:10px">
@@ -368,7 +370,7 @@ function contentEditor(db: Db, d: Device, m: string, now: Date, back: string, ci
           <input type="hidden" name="dev" value="${d.mac}"><input type="hidden" name="back" value="${back}"><input type="hidden" name="place" value="${JSON.stringify(x)}">
           <button>${label(x)}</button></form>`)
         : html`<p class="muted small">${city.searchError ? `搜索失败：${city.searchError}` : "没有找到，换个写法试试（如去掉“市”）。"}</p>`}</div>` : ""}
-      <p class="muted small">天气来自 Open-Meteo，30 分钟更新一次。${m === "weather" ? "" : "日期牌、天气和家庭看板共用这块屏的城市。"}</p>
+      <p class="muted small">天气来自 Open-Meteo，30 分钟更新一次。${m === "weather" ? "" : "日期牌、天气和看板共用这块屏的城市。"}</p>
       ${m === "dashboard" ? html`<p class="muted small" style="margin-bottom:0">看板右侧的留言、日程和待办，就是这块屏的<a href="/messages">留言</a>、<a href="#c-agenda">日程</a>和<a href="#c-todo">待办作业</a>内容（日程和待办在下方卡片里设置）。</p>` : ""}`;
   }
   const form = modeForm(db, m, now, { dev: d.mac, back });
