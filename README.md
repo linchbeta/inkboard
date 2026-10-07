@@ -10,6 +10,25 @@
 - `firmware/` 固件。在 [InkSight](https://github.com/datascale-ai/inksight) 的固件上改的，支持 ESP32-C3、WROOM-32E 和 S3。
 - `docs/使用说明.md` 从刷固件、配网到日常使用的说明，给家里人看的。
 
+## 实物
+
+![三块屏](pic/photos/family-1.jpg)
+
+左起：5.83 寸黑白红（古诗词）、4.2 寸黑白红（年度进度）、3.98 寸黑白黄红（日期牌）。
+
+| | |
+|---|---|
+| ![](pic/photos/398-datecard.jpg)<br>3.98 寸 · 日期牌 | ![](pic/photos/398-weather.jpg)<br>3.98 寸 · 天气 |
+| ![](pic/photos/398-poetry.jpg)<br>3.98 寸 · 古诗词 | ![](pic/photos/398-yearprogress.jpg)<br>3.98 寸 · 年度进度 |
+| ![](pic/photos/398-photo.jpg)<br>3.98 寸 · 相框（照片按四色抖动） | ![](pic/photos/42-yearprogress.jpg)<br>4.2 寸 · 年度进度 |
+| ![](pic/photos/583-weather.jpg)<br>5.83 寸 · 天气 | ![](pic/photos/583-words.jpg)<br>5.83 寸 · 外语单词 |
+
+![三块 3.98 寸](pic/photos/398-trio.jpg)
+
+三块 3.98 寸，分别放着外语单词、相框和日期牌。
+
+![三块屏](pic/photos/family-2.jpg)
+
 ## 能显示什么
 
 日历（农历、节气、干支，法定节假日的休和班）、日期牌、天气、相框、年度进度、倒数日、留言板、待办作业、古诗词、外语单词、月相黄历、日程、课程表、看板、一言、行情、资讯。

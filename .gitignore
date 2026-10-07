@@ -17,3 +17,6 @@ firmware/cal_*.raw
 
 # deployment packages
 release/
+
+# original product photos (the web copies, metadata stripped, are in pic/photos)
+pic/product/
