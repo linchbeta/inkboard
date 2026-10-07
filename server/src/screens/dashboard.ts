@@ -9,7 +9,7 @@ import { drawWeatherIcon } from "../render/weatherIcons.js";
 import { type Panel, Ink } from "../panels.js";
 import { WEEKDAY, LUNAR_MONTH, LUNAR_DATE, lunarOf, festivalOf, holidayOf, nextHoliday } from "../data/calendar.js";
 import { hitokoto, attribution, type Quote } from "../data/hitokoto.js";
-import { getWeather, getPlace, describeCode, type WeatherData } from "../data/weather.js";
+import { getWeather, getPlace, describeCode, windDirection, windLevel, type WeatherData } from "../data/weather.js";
 import { messagesFor, type Message } from "../data/messages.js";
 import type { CalEvent } from "../data/ics.js";
 import { currentDevice } from "../scope.js";
@@ -113,26 +113,53 @@ export function renderDashboard(panel: Panel, ctx: ScreenContext): Canvas {
     const line = `${desc.text} ${Math.round(today.tmin)}～${Math.round(today.tmax)}℃`;
     const ly = wTop + icon + (large ? 14 : 8) + hf.ascent;
     print(c, hf, ellipsize(hf, line, lw - 2 * pad), centeredX(hf, ellipsize(hf, line, lw - 2 * pad), cx), ly, Ink.Black);
-    let fy = ly;
-    if (today.pop >= 30) {
-      const r = `降水 ${today.pop}%`;
-      fy += large ? 24 : 16;
-      print(c, hf, r, centeredX(hf, r, cx), fy, Ink.Red);
+    // below, as many as fit (in this order of priority): the next two days, today's feel and
+    // humidity, wind and rain, the third day; the room left is shared out between them, so
+    // the column reaches down to the bottom instead of stopping short
+    const sf = large ? wqy12 : wqy9;
+    const dayH = large ? 44 : 26, lineH = large ? 26 : 16, ruleH = large ? 12 : 6;
+    const sp = large ? " " : "";
+    const rain = today.pop >= 30 ? `降水${sp}${today.pop}%` : "";
+    const lvl = windLevel(w.current.windKmh);
+    const wind = lvl <= 2 ? "微风" : `${windDirection(w.current.windDir)}${sp}${lvl}级`;
+    type Item = { kind: "line"; text: string; red?: string } | { kind: "day"; i: number };
+    const items: (Item & { prio: number })[] = [
+      { kind: "line", text: `体感${sp}${Math.round(w.current.feels)}℃  湿度${sp}${w.current.humidity}%`, prio: 2 },
+      { kind: "line", text: `${wind}${rain ? "  " : ""}`, red: rain, prio: 3 },
+      ...[1, 2, 3].filter((i) => i < w.daily.length).map((i) => ({ kind: "day" as const, i, prio: i === 3 ? 4 : i - 1 })),
+    ];
+    const hOf = (it: Item) => (it.kind === "day" ? dayH : lineH);
+    const top = ly + Math.round(hf.ascent * 0.4);
+    const room = H - pad - top;
+    const chosen = new Set<Item>();
+    let used = 0;
+    for (const it of [...items].sort((a, b) => a.prio - b.prio)) {
+      const extra = hOf(it) + (it.kind === "day" && ![...chosen].some((c) => c.kind === "day") ? ruleH : 0);
+      if (used + extra <= room) { chosen.add(it); used += extra; }
     }
-    // 3.98": the next two days below
-    if (large) {
-      fy += 22;
-      for (let i = 1; i <= 2 && i < w.daily.length && fy + 40 < H - pad - 24; i++) {
-        const dd = w.daily[i];
-        if (i === 1) c.dottedH(pad, lw - pad, fy, Ink.Black, 1, 3);
-        const mid = fy + 22;
-        const label = i === 1 ? "明天" : "后天";
-        print(c, wqy12, label, pad, centeredAt(wqy12, label, 0, mid).baseline, Ink.Black);
-        drawWeatherIcon(c, describeCode(dd.code).icon, true, pad + 44, mid - 14, 28);
-        const r = `${Math.round(dd.tmin)}～${Math.round(dd.tmax)}℃`;
-        print(c, wqy12, r, lw - pad - width(wqy12, r), centeredAt(wqy12, r, 0, mid).baseline, Ink.Black);
-        fy += 44;
+    const shown = items.filter((it) => chosen.has(it));
+    const spare = Math.min(large ? 16 : 8, Math.floor((room - used) / (shown.length + 1)));
+    let fy = top + spare;
+    let ruled = false;
+    for (const it of shown) {
+      if (it.kind === "line") {
+        const t = ellipsize(sf, it.text + (it.red ?? ""), lw - 2 * pad);
+        const base = centeredAt(sf, t, 0, fy + lineH / 2).baseline;
+        const x = print(c, sf, it.red ? t.slice(0, it.text.length) : t, centeredX(sf, t, cx), base, Ink.Black);
+        if (it.red && t.length > it.text.length) print(c, sf, t.slice(it.text.length), x, base, Ink.Red);
+        fy += lineH + spare;
+        continue;
       }
+      if (!ruled) { c.dottedH(pad, lw - pad, fy + Math.round(ruleH / 2), Ink.Black, 1, 3); fy += ruleH; ruled = true; }
+      const dd = w.daily[it.i];
+      const mid = fy + Math.round(dayH / 2);
+      const label = ["", "明天", "后天", "大后天"][it.i];
+      print(c, sf, label, pad, centeredAt(sf, label, 0, mid).baseline, Ink.Black);
+      const is = large ? 28 : 18;
+      drawWeatherIcon(c, describeCode(dd.code).icon, true, pad + (large ? 56 : 38), mid - Math.round(is / 2), is);
+      const r = `${Math.round(dd.tmin)}～${Math.round(dd.tmax)}℃`;
+      print(c, sf, r, lw - pad - width(sf, r), centeredAt(sf, r, 0, mid).baseline, Ink.Black);
+      fy += dayH + spare;
     }
   } else {
     const note = ctx.weatherNote ?? "未设置天气城市";
