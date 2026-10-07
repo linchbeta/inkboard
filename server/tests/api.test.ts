@@ -142,3 +142,33 @@ test("holidays for the device's offline calendar: published years only", async (
   assert.ok(lines.every((l) => /^(2025120[1-9]|202512[1-3]\d|2026\d{4}) [12]$/.test(l)), "the year and the December before");
   assert.equal((await req("/api/holidays/2099")).status, 404);
 });
+
+test("weather: a cache dated in the future (a test date) is refetched, ages on the real clock", async () => {
+  const { openDb: open, setRawSetting } = await import("../src/db.js");
+  const { runAs } = await import("../src/scope.js");
+  const { getWeather } = await import("../src/data/weather.js");
+  const db = open(":memory:");
+  const place = { name: "测试", lat: 1.5, lon: 2.5, timezone: "Asia/Shanghai" };
+  const old = { place, fetchedAt: new Date(Date.now() + 11 * 86_400_000).toISOString(), current: { temp: -99 }, hourly: [], daily: [] };
+  setRawSetting(db, "u:1:weather_place", JSON.stringify(place));
+  setRawSetting(db, "u:1:weather_cache", JSON.stringify(old));
+  const realFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = (async () => {
+    calls++;
+    const t = "2026-10-07T09:00";
+    return new Response(JSON.stringify({
+      current: { time: t, temperature_2m: 21, relative_humidity_2m: 50, apparent_temperature: 21, is_day: 1, weather_code: 0, wind_speed_10m: 5, wind_direction_10m: 90 },
+      hourly: { time: [t], temperature_2m: [21], precipitation_probability: [0], weather_code: [0] },
+      daily: { time: ["2026-10-07"], weather_code: [0], temperature_2m_max: [25], temperature_2m_min: [18], precipitation_probability_max: [0] },
+    }));
+  }) as typeof fetch;
+  try {
+    const w = await runAs(1, () => getWeather(db, new Date(2026, 9, 18, 1, 4)), "AA:00:00:00:00:09");  // a test date
+    assert.equal(calls, 1);
+    assert.equal(w?.current.temp, 21);
+    assert.ok(Math.abs(Date.parse(w!.fetchedAt) - Date.now()) < 60_000, "dated on the real clock");
+    await runAs(1, () => getWeather(db, new Date()), "AA:00:00:00:00:09");
+    assert.equal(calls, 1, "fresh now: no second fetch");
+  } finally { globalThis.fetch = realFetch; }
+});

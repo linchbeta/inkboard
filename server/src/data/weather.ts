@@ -101,8 +101,10 @@ const inflights = new Map<string, Promise<WeatherData | undefined>>();
 /**
  * Weather for the configured place, fetching when the cache is older than 30 minutes.
  * Returns stale data if the fetch fails, undefined if no place is set or nothing is cached.
+ * The cache's age is on the real clock, not `now`: a test date (or one moved back) would
+ * otherwise date a fetch in the future, and that cache would then never look old.
  */
-export async function getWeather(db: Db, now: Date): Promise<WeatherData | undefined> {
+export async function getWeather(db: Db, _now?: Date): Promise<WeatherData | undefined> {
   const place = getPlace(db);
   if (!place) return undefined;
   const key = `${place.lat},${place.lon}`;
@@ -112,10 +114,11 @@ export async function getWeather(db: Db, now: Date): Promise<WeatherData | undef
     const saved = raw ? JSON.parse(raw) as WeatherData : undefined;
     if (saved && saved.place.lat === place.lat && saved.place.lon === place.lon) { memo = saved; memos.set(key, saved); }
   }
-  if (memo && now.getTime() - Date.parse(memo.fetchedAt) < TTL_MS) return memo;
+  const age = Date.now() - Date.parse(memo?.fetchedAt ?? "");
+  if (memo && age >= 0 && age < TTL_MS) return memo;
   let p = inflights.get(key);
   if (!p) {
-    p = fetchWeather(place, now)
+    p = fetchWeather(place, new Date())
       .then((w) => { memos.set(key, w); setSetting(db, "weather_cache", JSON.stringify(w)); return w; })
       .catch((e) => { console.warn(`[weather] fetch failed: ${e instanceof Error ? e.message : e}`); return memos.get(key); })
       .finally(() => { inflights.delete(key); });
