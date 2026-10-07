@@ -44,6 +44,9 @@ void epdDisplay2bppPaged(const char *path);
 // datasheet (8.2.9) marks every bit of it "don't care", so 0x00 and 0x01 refresh the same.
 // Panel tuning for tests (A0, off by default): -DSE0398_PSR2=0x.. (2nd PSR byte, e.g. 0x29
 // = the MTP default 0x09 + FOPT) and -DSE0398_VDCS=0x.. (VCOM DC, 0.05 V steps below 0 V).
+// Tried on a panel with a faint mirrored band (the panel's own fault, it moved with the
+// panel): neither helped, and VCOM DC 0 V / -0.5 V / -1.5 V turned the whole screen
+// yellowish -- the panel's MTP value was best.
 #ifndef SE0398_DRF_PARAM
 #if defined(SE0398_A1)
 #define SE0398_DRF_PARAM 0x01
