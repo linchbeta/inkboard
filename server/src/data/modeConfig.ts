@@ -12,6 +12,10 @@ export interface ConfigField {
   /** select: more options computed from the current settings (e.g. the events listed). */
   dynamicOptions?: (values: Record<string, string>, now: Date) => [string, string][];
   default?: string;
+  /** textarea: rewrites the value on save (e.g. 明天 -> a date). */
+  normalize?: (value: string, now: Date) => string;
+  /** textarea: how each line was understood, shown under the field ("ok: false" in red). */
+  check?: (value: string, now: Date, values: Record<string, string>) => { ok: boolean; text: string }[];
 }
 
 export function getModeConfig(db: Db, mode: string, fields: ConfigField[] = []): Record<string, string> {

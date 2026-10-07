@@ -223,3 +223,59 @@ test("poetry: '换一首' moves on, a fixed poem can be chosen", async () => {
   assert.equal((await app.request("/admin/modes/poetry/action/nope", { method: "POST", body: dev() })).status, 404);
   assert.match(await (await app.request("/modes")).text(), /古诗词/);
 });
+
+test("hand-written events: the ways people write dates and times", async () => {
+  const { parseLine, canonicalLines, checkLines, parseLocalEvents: local } = await import("../src/data/localEvents.js");
+  const now = new Date(2026, 9, 7, 10, 0);  // Wednesday
+  const day = (s: string) => { const e = parseLine(s, now).event!; return e.days.kind === "dates" ? e.days.first.toDateString() : e.days.label; };
+  const d = (m: number, dd: number, y = 2026) => new Date(y, m - 1, dd).toDateString();
+  assert.equal(day("2026-10-14 矿产资源竞赛 @大足"), d(10, 14));
+  assert.equal(day("2026/10/14 x"), d(10, 14));
+  assert.equal(day("10月14日 x"), d(10, 14));
+  assert.equal(day("10.14 x"), d(10, 14));
+  assert.equal(day("２０２６－１０－１４　ｘ"), d(10, 14));
+  assert.equal(day("3月1日 x"), d(3, 1, 2027));  // no year and past: next year's
+  assert.equal(day("明天 x"), d(10, 8));
+  assert.equal(day("大后天 x"), d(10, 10));
+  assert.equal(day("周五 x"), d(10, 9));
+  assert.equal(day("周三 x"), d(10, 7));        // today
+  assert.equal(day("下周三 x"), d(10, 14));
+  assert.equal(day("星期日 x"), d(10, 11));
+  assert.equal(day("每周一三五 x"), "每周一三五");
+  assert.equal(day("每周日、六 x"), "每周六日");
+  assert.equal(day("每月15号 x"), "每月15号");
+  assert.equal(day("每年5月20日 x"), "每年5月20日");
+  assert.equal(day("工作日 x"), "工作日");
+  const e = (s: string) => parseLine(s, now).event!;
+  assert.deepEqual([e("2026-10-14 矿产资源竞赛 @大足").title, e("2026-10-14 矿产资源竞赛 @大足").location, e("2026-10-14 矿产资源竞赛 @大足").start], ["矿产资源竞赛", "大足", undefined]);
+  assert.deepEqual([e("10月20日 14:00-16:00 家长会").start, e("10月20日 14:00-16:00 家长会").end], [840, 960]);
+  assert.deepEqual([e("明天 下午2点-4点 会").start, e("明天 下午2点-4点 会").end], [840, 960]);
+  assert.deepEqual([e("明天 2点半 课").start, e("明天 晚上7点 课").start, e("明天 14：30 课").start], [150, 1140, 870]);
+  assert.deepEqual([e("明天 9:30-11 课").end, e("明天 9:30-11 课").title], [660, "课"]);  // a bare hour ends a range
+  assert.equal(e("2026-10-14 3班家长会").title, "3班家长会");  // a number in the title is not a time
+  assert.deepEqual([e("10-24~10-26 出差 @成都").days], [{ kind: "dates", first: new Date(2026, 9, 24), last: new Date(2026, 9, 26) }]);
+  assert.equal((e("10月24日至26日 出差").days as { last: Date }).last.getDate(), 26);
+  for (const bad of ["矿产资源竞赛", "2026-02-30 x", "明天", "明天 25:00 x", "14:00 开会"]) assert.ok(parseLine(bad, now).error, bad);
+  // saved: relative dates written out, the rest kept
+  assert.equal(canonicalLines("明天 9:30 牙医\n下周三 钢琴课 @少年宫\n10月14日 x\n每周一 升旗\n# 注释\n乱写", now),
+    "2026-10-08 9:30 牙医\n2026-10-14 钢琴课 @少年宫\n2026-10-14 x\n每周一 升旗\n# 注释\n乱写");
+  // the check list: understood lines, and why the others are not
+  const chk = checkLines("2026-10-14 矿产资源竞赛 @大足\n2026-12-01 年会\n乱写", now, 7);
+  assert.equal(chk[0].text, "10月14日 周三（7 天后） · 全天 · 矿产资源竞赛 @大足");
+  assert.match(chk[1].text, /55 天后，到时出现/);
+  assert.equal(chk[2].ok, false);
+  // spans: one all-day event; timed spans: one per day; the range includes its last day
+  const ev = local("10-13~10-15 培训\n10-13~10-14 09:00 早会", new Date(2026, 9, 7), new Date(2026, 9, 15));
+  assert.equal(ev.filter((x) => x.title === "培训").length, 1);
+  assert.equal(ev.filter((x) => x.title === "早会").length, 2);
+});
+
+test("agenda: a hand-written event on the last day of the range shows", async () => {
+  const { agendaMode } = await import("../src/screens/agenda.js");
+  const { setModeConfig } = await import("../src/data/modeConfig.js");
+  const { openDb } = await import("../src/db.js");
+  const db = openDb(":memory:");
+  setModeConfig(db, "agenda", agendaMode.config!, { local: "2026-10-14 矿产资源竞赛 @大足", days: "7" });
+  const ctx = await agendaMode.prepare!(db, new Date(2026, 9, 7, 10));
+  assert.equal((ctx.data as { events: { title: string }[] }).events[0]?.title, "矿产资源竞赛");
+});

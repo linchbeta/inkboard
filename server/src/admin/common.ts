@@ -58,7 +58,9 @@ export function modeForm(db: Db, id: string, now: Date, o: { dev: string; back: 
       ${f.type === "textarea" ? html`<textarea name="${f.key}" rows="${Math.min(12, Math.max(4, cfg[f.key].split("\n").length + 1))}" placeholder="${f.placeholder ?? ""}">${cfg[f.key]}</textarea>`
         : f.type === "select" ? html`<select name="${f.key}">${opts(cfg[f.key], [...f.options!, ...(f.dynamicOptions?.(cfg, now) ?? [])])}</select>`
         : html`<input type="text" name="${f.key}" value="${cfg[f.key]}" placeholder="${f.placeholder ?? ""}" style="width:100%">`}
-      ${f.help ? html`<small>${f.help}</small>` : ""}</label>`)}
+      ${f.help ? html`<small>${f.help}</small>` : ""}
+      ${f.check && cfg[f.key].trim() ? html`<ul class="checks">${f.check(cfg[f.key], now, cfg).map((r) =>
+        html`<li class="${r.ok ? "ok" : "bad"}">${r.ok ? "✓" : "✗"} ${r.text}</li>`)}</ul>` : ""}</label>`)}
     <button class="primary">保存</button></form>`;
 }
 

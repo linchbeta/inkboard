@@ -23,6 +23,7 @@ export function modesRoutes(app: Hono, db: Db, now: () => Date): void {
     const b = await c.req.parseBody() as Record<string, unknown>;
     const d = getOwnDevice(db, String(b.dev ?? ""));
     if (!s?.config || !d) return c.notFound();
+    for (const f of s.config) if (f.normalize && typeof b[f.key] === "string") b[f.key] = f.normalize(b[f.key] as string, now());
     asDevice(d.mac, () => setModeConfig(db, id, s.config!, b));
     return c.redirect(withFlash(safeBack(b.back, `/devices/${d.mac}?tab=content#c-${id}`), "已保存，屏幕下次刷新时更新"));
   });

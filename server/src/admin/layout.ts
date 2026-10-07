@@ -112,6 +112,8 @@ export const CSS = `
   .pl-opts { display:flex; flex-wrap:wrap; gap:8px 16px; font-size:13px; color:var(--fg2) } .pl-opts label { display:inline-flex; align-items:center; gap:6px; white-space:nowrap }
   textarea { width:100%; font-family:ui-monospace,Consolas,"Microsoft YaHei",monospace; font-size:13px; line-height:1.5 }
   textarea.text { font-family:inherit; font-size:15px }
+  ul.checks { list-style:none; margin:6px 0 0; padding:0; font-size:13px; line-height:1.6 }
+  ul.checks li.ok { color:var(--ok) } ul.checks li.bad { color:var(--acc) }
   label.field { display:block; margin:12px 0 } label.field > span { display:block; font-size:13px; font-weight:500; color:var(--fg2); margin-bottom:5px }
   label.field input[type=text], label.field input[type=password] { width:100% }
   label.field small { display:block; color:var(--mute); font-size:12px; margin-top:4px }

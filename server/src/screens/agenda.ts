@@ -4,7 +4,8 @@
 import { refFonts, width, print, centeredAt } from "../render/reftext.js";
 import { type Panel, Ink } from "../panels.js";
 import { WEEKDAY } from "../data/calendar.js";
-import { parseIcs, parseLocalEvents, fetchIcs, type CalEvent } from "../data/ics.js";
+import { parseIcs, fetchIcs, type CalEvent } from "../data/ics.js";
+import { parseLocalEvents, canonicalLines, checkLines } from "../data/localEvents.js";
 import { getModeConfig, type ConfigField } from "../data/modeConfig.js";
 import type { ScreenContext } from "./testPattern.js";
 import type { Screen } from "./screen.js";
@@ -15,12 +16,14 @@ const CONFIG: ConfigField[] = [
     placeholder: "家庭|https://calendar.google.com/calendar/ical/…/basic.ics",
     help: "可选\"名称|\"前缀。Google 日历：设置 → 日历的\"iCal 格式的私密地址\"；iPhone/iCloud：共享日历 → 公开日历链接；Outlook：发布日历 → ICS 链接；飞书/钉钉/企业微信日历也可导出订阅链接。" },
   { key: "local", label: "手动添加的日程", type: "textarea", default: "",
-    placeholder: "2026-10-05 14:00 家长会 @学校\n2026-10-04 秋游\n每周一 07:50 升旗仪式",
-    help: "每行一个：日期 [时间[-结束时间]] 标题 [@地点]；不写时间为全天。也可写\"每周一\"\"每天\"。" },
-  { key: "days", label: "显示天数", type: "select", default: "7", options: [["3", "3 天"], ["7", "7 天"], ["14", "14 天"]] },
+    placeholder: "2026-10-14 矿产资源竞赛 @大足\n10月20日 下午2点-4点 家长会 @学校\n明天 9:30 牙医\n10-24~10-26 出差 @成都\n每周一三五 07:50 升旗仪式\n每月15号 还信用卡\n每年5月20日 纪念日",
+    help: "每行一条：日期，可选时间，内容，可选 @地点。日期可写 2026-10-14、10/14、10月14日、明天、周五、下周三，几天的用 10-24~10-26；重复的写 每天、工作日、每周一三五、每月15号、每年5月20日。时间可写 14:00、14:00-16:00、下午2点、2点半，不写就是全天。明天、周五这类写法保存时换成具体日期。下面列出每行的识别结果。",
+    normalize: canonicalLines,
+    check: (v, now, cfg) => checkLines(v, now, Number(cfg.days || 7)) },
+  { key: "days", label: "显示范围", type: "select", default: "7", options: [["3", "今天和之后 3 天"], ["7", "今天和之后 7 天"], ["14", "今天和之后 14 天"], ["30", "今天和之后 30 天"]] },
 ];
 
-interface AgendaData { events: CalEvent[]; errors: string[]; configured: boolean }
+interface AgendaData { events: CalEvent[]; errors: string[]; configured: boolean; /** Days after today shown. */ days?: number }
 
 const midnight = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 const hm = (d: Date) => `${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`;
@@ -48,7 +51,8 @@ export function groupByDay(events: CalEvent[], now: Date, days: number): { day: 
 export function renderAgenda(panel: Panel, ctx: ScreenContext) {
   const { wqy12, wqy9 } = refFonts();
   const data = (ctx.data as AgendaData | undefined) ?? { events: [], errors: [], configured: false };
-  const days = groupByDay(data.events, ctx.now, panel.height >= 400 ? 7 : 4);
+  // every day of the range with something on (what does not fit is counted below)
+  const days = groupByDay(data.events, ctx.now, (data.days ?? 7) + 1);
   const total = days.reduce((n, d) => n + d.events.length, 0);
   const f = screenWithHeader(panel, ctx, "日程", total ? `接下来 ${total} 项` : "");
   const { c, W, H, large, m } = f;
@@ -116,7 +120,9 @@ export const agendaMode: Screen = {
   render: renderAgenda,
   prepare: async (db, now) => {
     const cfg = getModeConfig(db, "agenda", CONFIG);
-    const from = midnight(now), to = new Date(from.getTime() + Number(cfg.days || 7) * 86_400_000);
+    // today and the next `days` days, the last one included
+    const n = Number(cfg.days || 7);
+    const from = midnight(now), to = new Date(from.getFullYear(), from.getMonth(), from.getDate() + n + 1);
     const events: CalEvent[] = [], errors: string[] = [];
     const feeds = cfg.feeds.split("\n").map((l) => l.trim()).filter((l) => l && !l.startsWith("#"));
     await Promise.all(feeds.map(async (line) => {
@@ -125,6 +131,6 @@ export const agendaMode: Screen = {
       catch (e) { errors.push(`${name || url.slice(0, 30)}：${e instanceof Error ? e.message : e}`); }
     }));
     events.push(...parseLocalEvents(cfg.local, from, to));
-    return { data: { events, errors, configured: feeds.length > 0 || cfg.local.trim() !== "" } satisfies AgendaData };
+    return { data: { events, errors, configured: feeds.length > 0 || cfg.local.trim() !== "", days: n } satisfies AgendaData };
   },
 };

@@ -174,35 +174,8 @@ export function parseIcs(text: string, from: Date, to: Date, source = ""): CalEv
  *   2026-10-05 14:00 家长会 @学校     2026-10-05 14:00-15:30 …     2026-10-05 秋游 (all day)
  *   每周一 07:50 升旗仪式             每天 21:00 刷牙洗脸
  */
-export function parseLocalEvents(text: string, from: Date, to: Date): CalEvent[] {
-  const out: CalEvent[] = [];
-  const WEEK = "日一二三四五六";
-  for (const raw of text.split("\n")) {
-    const line = raw.trim();
-    if (!line || line.startsWith("#")) continue;
-    const m = line.match(/^(\d{4}-\d{1,2}-\d{1,2}|每周[日一二三四五六天]|每天)\s+(?:(\d{1,2}):(\d{2})(?:\s*-\s*(\d{1,2}):(\d{2}))?\s+)?(.+?)(?:\s+[@＠](.+))?$/);
-    if (!m) continue;
-    const [, when, h1, m1, h2, m2, rawTitle, loc] = m;
-    const title = rawTitle.replace(/^全天\s+/, "");
-    const days: Date[] = [];
-    if (/^\d/.test(when)) {
-      const [y, mo, d] = when.split("-").map(Number);
-      days.push(new Date(y, mo - 1, d));
-    } else {
-      for (let t = new Date(from.getFullYear(), from.getMonth(), from.getDate()); t < to; t = new Date(t.getFullYear(), t.getMonth(), t.getDate() + 1)) {
-        if (when === "每天" || WEEK.indexOf(when.slice(2).replace("天", "日")) === t.getDay()) days.push(t);
-      }
-    }
-    for (const d of days) {
-      const allDay = h1 === undefined;
-      const start = allDay ? d : new Date(d.getFullYear(), d.getMonth(), d.getDate(), +h1, +m1);
-      const end = allDay ? new Date(d.getTime() + DAY) : h2 !== undefined ? new Date(d.getFullYear(), d.getMonth(), d.getDate(), +h2, +m2) : start;
-      if (end < from && !(end.getTime() === start.getTime() && start >= from) || start >= to) continue;
-      out.push({ start, end, allDay, title, location: loc ?? "", source: "" });
-    }
-  }
-  return out;
-}
+// hand-written lines: see localEvents.ts
+export { parseLocalEvents } from "./localEvents.js";
 
 // ── fetching, with a 30-minute cache that also serves stale data when offline ──
 const cache = new Map<string, { at: number; text: string }>();
