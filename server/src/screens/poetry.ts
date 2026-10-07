@@ -63,9 +63,11 @@ function couplets(lines: string[]): string[] {
   return out;
 }
 
-export function plan(poem: Poem, large: boolean, maxW: number, maxH: number): Layout {
+export function plan(poem: Poem, large: boolean, maxW: number, maxH: number, maxBody = Infinity): Layout {
   const metaH = refFonts().wqy12.ascent + 4;
-  const fonts = bodyFonts(large);
+  const all = bodyFonts(large);
+  const capped = all.filter((f) => fh(f) <= maxBody);
+  const fonts = capped.length ? capped : all.slice(-1);
   const comfortable = fonts.filter((f) => fh(f) >= (large ? 28 : 20)); // below this, try another layout first
   const attempt = (kind: Layout["kind"], body: RefFont, cols: 1 | 2): Layout | undefined => {
     const title = titleFont(poem, body, large, maxW);
@@ -127,7 +129,10 @@ export function renderPoetry(panel: Panel, ctx: ScreenContext) {
   const { c, W, H, large, m } = f;
   const pad = large ? 24 : 6;
   const maxW = W - 2 * m - 2 * pad, maxH = H - f.top - 2 * pad;
-  const L = plan(poem, large, maxW, maxH);
+  // upright: no larger than the same poem on the screen lying down (the long side would
+  // otherwise make it much larger)
+  const flat = H > W ? plan(poem, large, H - 2 * m - 2 * pad, W - f.top - 2 * pad) : undefined;
+  const L = plan(poem, large, maxW, maxH, flat ? fh(flat.body) : Infinity);
   const cx = Math.round(W / 2);
   let y = f.top + pad + Math.max(0, Math.round((maxH - L.h) / 3));
 
