@@ -45,9 +45,9 @@ export function renderCalendar(panel: Panel, ctx: ScreenContext, opts: CalendarO
   const W = panel.width;
   const H = panel.height;
   const large = isLarge(panel); // reference: large_layout = height >= 400 (the short side, so upright too)
-  // An upright 4.2" has ~41 px columns: 休 / 班 move from the left of the date (where they
-  // would run into the cell before) to the cell's top left corner, and the rest of the cell
-  // moves down a little to make room. The large panels upright keep them where they are.
+  // An upright 4.2" has ~41 px columns: 休 / 班 go to the top of their circle (above the
+  // date, where they cannot run into the cell before), and the rest of the cell moves down
+  // a little to make room. The large panels upright are laid out as landscape.
   // Same for the firmware's copy.
   const tall = H > W && !large;
   const weekStart = opts.weekStart ?? 0;
@@ -241,26 +241,38 @@ export function renderCalendar(panel: Panel, ctx: ScreenContext, opts: CalendarO
       if (hol) {
         const text = hol === "work" ? "班" : "休";
         const holInk = hol === "work" ? Ink.Black : Ink.Red;
-        if (isToday) {
-          const rr = large ? 10 : 8;
-          // Reference x, pushed left if the badge would cover the date (upright: the corner).
-          const rx = tall ? x + displayWeek * bw + rr + 3 : Math.min(bx - (large ? 10 : 5), dayInk.x0 - 2 - rr);
-          const ry = tall ? cellTop + rr + 3 : by - 2;
-          fillCircle(c, rx, ry, rr, Ink.White);
-          drawCircle(c, rx, ry, rr, Ink.Red);
-          const p = centeredAt(wqy9, text, rx, ry);
-          print(c, wqy9, text, p.x, p.baseline, holInk);
-          check(`badge ${text}`, wqy9, text, p.x, p.baseline, rx, ry,
-                { color: holInk, circle: { cx: rx, cy: ry, r: rr - 1 } });
-          badges.push({ cx: rx, cy: ry, r: rr + 1 });
-          opts.boxes?.push({ day, what: `badge ${text}`, ink: { x0: rx - rr, x1: rx + rr, y0: ry - rr, y1: ry + rr } });
-        } else {
-          // Reference position, pushed left if it would touch the date.
-          const ink = inkBounds(wqy9, text, 0, 0)!;
-          const hx = tall ? x + displayWeek * bw + 4 : Math.min(bx - (large ? 20 : 11), dayInk.x0 - 2 - ink.x1);
-          const hb = tall ? cellTop + 4 - ink.y0 : by + 3;
-          print(c, wqy9, text, hx, hb, holInk);
-          box(day, text, wqy9, text, hx, hb);
+        // the 4.2": as small as the stem/branch characters
+        const hf = large ? wqy9 : wqy6;
+        {
+          // On the circle round the date + lunar label (today's red disc) that runs through the
+          // top stem/branch badge: that badge mirrored to the left, moved up along the circle
+          // until it clears a two-digit date. Today a badge like the stem/branch ones, other
+          // days the character alone, in the same place.
+          const a = dayInk, b = inkBounds(lunarFont, label, labelX, labelBaseline);
+          const dcx = Math.round((Math.min(a.x0, b?.x0 ?? a.x0) + Math.max(a.x1, b?.x1 ?? a.x1)) / 2);
+          const dcy = Math.round((a.y0 + (b?.y1 ?? a.y1)) / 2);
+          const rr = large ? 9 : 7;
+          const gx = Math.max(taxX + (large ? 36 : 27) - offset - 1, dayInk.x1 + 2 + rr);
+          const labelTop = b?.y0 ?? Infinity;
+          const gy = Math.min(by - 2 - 8 - 3, labelTop - 2 - rr - (2 * rr + 1));
+          const R = Math.hypot(gx - dcx, gy - dcy);
+          // the mirror image; in the narrow upright 4.2" cells the top of the circle, which
+          // stays inside the cell
+          let t = tall ? -Math.PI / 2 : Math.atan2(gy - dcy, gx - dcx);
+          const at = (u: number) => [Math.round(dcx - R * Math.cos(u)), Math.round(dcy + R * Math.sin(u))];
+          const clear = ([px, py]: number[]) => px + rr + 1 < dayInk.x0 || py + rr + 1 < dayInk.y0;
+          while (!clear(at(t)) && t > -Math.PI / 2) t -= Math.PI / 90;
+          const [rx, ry] = at(t);
+          if (isToday) {
+            fillCircle(c, rx, ry, rr, Ink.White);
+            drawCircle(c, rx, ry, rr, Ink.Red);
+            badges.push({ cx: rx, cy: ry, r: rr + 1 });
+            opts.boxes?.push({ day, what: `badge ${text}`, ink: { x0: rx - rr, x1: rx + rr, y0: ry - rr, y1: ry + rr } });
+          }
+          const p = centeredAt(hf, text, rx, ry);
+          print(c, hf, text, p.x, p.baseline, holInk);
+          if (isToday) check(`badge ${text}`, hf, text, p.x, p.baseline, rx, ry, { color: holInk, circle: { cx: rx, cy: ry, r: rr - 1 } });
+          else box(day, text, hf, text, p.x, p.baseline);
         }
       }
     }
