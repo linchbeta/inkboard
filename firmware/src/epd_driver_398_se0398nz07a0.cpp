@@ -163,7 +163,7 @@ static void se0398AutoSequence() {
     epdSendCommand(0x04);   // PON
     epdWaitBusy("PON", 5000);
 #endif
-    Serial.println("[EPD-SE0398] DRF");
+    Serial.printf("[EPD-SE0398] DRF 0x%02X\n", SE0398_DRF_PARAM);
     epdSendCommand(0x12);   // DRF
     epdSendData(SE0398_DRF_PARAM);
     epdWaitBusy("DRF", 60000);
