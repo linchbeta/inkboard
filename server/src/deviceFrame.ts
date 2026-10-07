@@ -5,7 +5,7 @@ import { runAs, withTestDate } from "./scope.js";
 import { asDevice } from "./data/content.js";
 import { getSetting } from "./db.js";
 import { deviceOwner, pairCode, userCount } from "./data/users.js";
-import { PANELS, type Panel } from "./panels.js";
+import { PANELS, type Panel, orientedPanel } from "./panels.js";
 import { SCREENS, prepareScreen, buildFrame, renderScreen, pairingFrame, genericPanel, type Frame } from "./frames.js";
 import { getSettings, pickMode, DEFAULT_MODE, type DeviceSettings } from "./data/devices.js";
 import type { ScreenContext } from "./screens/testPattern.js";
@@ -50,7 +50,7 @@ export async function frameFor(db: Db, device: Device, panel: Panel, now: Date,
     now = withTestDate(now, () => getSetting(db, "test_date", "")); // the owner's test date
     const d = getDevice(db, device.mac)!;
     const p = await pick(db, d, now, o.advance);
-    const frame = buildFrame(panel, { ...p.extra, ...o.ctx, now, font: p.settings.font }, o.prefer2bpp, p.mode);
+    const frame = buildFrame(panel, { ...p.extra, ...o.ctx, now, font: p.settings.font }, o.prefer2bpp, p.mode, p.settings.orientation);
     return { ...p, frame };
   }, device.mac); // the device's own content where it has some
 }
@@ -59,7 +59,8 @@ export async function frameFor(db: Db, device: Device, panel: Panel, now: Date,
 export async function canvasFor(db: Db, device: Device, panel: Panel, now: Date): Promise<Picked & { canvas: Canvas }> {
   return asDevice(device.mac, async () => {
     const p = await pick(db, device, now, false);
-    const canvas = renderScreen(panel, { ...p.extra, now, font: p.settings.font, batteryV: device.battery_v ?? undefined }, p.mode);
+    // upright, as the screen is seen
+    const canvas = renderScreen(orientedPanel(panel, p.settings.orientation), { ...p.extra, now, font: p.settings.font, batteryV: device.battery_v ?? undefined }, p.mode);
     return { ...p, canvas };
   });
 }

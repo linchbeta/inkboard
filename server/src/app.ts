@@ -5,6 +5,7 @@ import { getSetting, getOwnDevice } from "./db.js";
 import { asDevice } from "./data/content.js";
 import { withTestDate } from "./scope.js";
 import { panelById } from "./deviceFrame.js";
+import { orientedPanel, isOrientation } from "./panels.js";
 import { compatRoutes } from "./api/compat.js";
 import { v1Routes } from "./api/v1.js";
 import { renderScreen, prepareScreen, SCREENS } from "./frames.js";
@@ -51,7 +52,8 @@ export function createApp(db: Db, partial: Partial<AppOptions> = {}): Hono {
   authRoutes(app, db);               // setup, login, pairing, users
 
   // Preview of a mode on a panel type, in the panel's measured colours (admin pages).
-  // ?screen= mode, ?font= large-text face, plus the photo editor's unsaved edits.
+  // ?screen= mode, ?font= large-text face, ?o= orientation (else the screen's, with ?dev=),
+  // plus the photo editor's unsaved edits. Drawn upright, as the screen is seen.
   app.get("/preview/:file", async (c) => {
     const m = /^([a-z0-9_]+)\.png$/.exec(c.req.param("file"));
     const panel = m ? panelById(m[1]) : undefined;
@@ -66,7 +68,8 @@ export function createApp(db: Db, partial: Partial<AppOptions> = {}): Hono {
     const dev = c.req.query("dev") ? getOwnDevice(db, c.req.query("dev")!) : undefined;
     const draw = async () => {
       const extra = await prepareScreen(db, screen, now, params);
-      return renderScreen(panel, { ...extra, now, font: c.req.query("font") ?? (dev && getSettings(db, dev).font) }, screen);
+      const o = c.req.query("o") ?? (dev && getSettings(db, dev).orientation);
+      return renderScreen(orientedPanel(panel, isOrientation(o) ? o : undefined), { ...extra, now, font: c.req.query("font") ?? (dev && getSettings(db, dev).font) }, screen);
     };
     const png = previewPng(dev ? await asDevice(dev.mac, draw) : await draw(), panel, scale);
     return c.body(png as Uint8Array<ArrayBuffer>, 200, { "Content-Type": "image/png", "Cache-Control": "no-store" });

@@ -26,3 +26,41 @@ test("every screen renders on every panel size without throwing", () => {
     }
   }
 });
+
+test("orientation: upright canvases turned into the panel's own, each way round", async () => {
+  const { Canvas } = await import("../src/render/canvas.js");
+  const { toNative } = await import("../src/render/orient.js");
+  const { orientedPanel, PANELS, Ink } = await import("../src/panels.js");
+  // a mark at the upright top-left corner, seen where it lands on the panel (W x H = 8 x 4)
+  const at = (o: "landscape" | "portrait" | "landscape-flip" | "portrait-flip") => {
+    const portrait = o.startsWith("portrait");
+    const up = new Canvas(portrait ? 4 : 8, portrait ? 8 : 4);
+    up.set(0, 0, Ink.Red);
+    const n = toNative(up, o);
+    assert.deepEqual([n.width, n.height], [8, 4]);
+    const i = n.px.indexOf(Ink.Red);
+    return [i % 8, Math.floor(i / 8)];
+  };
+  assert.deepEqual(at("landscape"), [0, 0]);
+  assert.deepEqual(at("landscape-flip"), [7, 3]);
+  assert.deepEqual(at("portrait"), [7, 0]);       // turned counter-clockwise: the panel's top-right is the top-left
+  assert.deepEqual(at("portrait-flip"), [0, 3]);
+  const p = orientedPanel(PANELS.se0398, "portrait");
+  assert.deepEqual([p.width, p.height, PANELS.se0398.width], [552, 768, 768]);
+});
+
+test("orientation: an upright screen gets a native frame; layouts without an upright version say so", async () => {
+  const { buildFrame, renderScreen } = await import("../src/frames.js");
+  const { orientedPanel, PANELS } = await import("../src/panels.js");
+  const now = new Date(2026, 9, 7, 10);
+  for (const p of Object.values(PANELS)) {
+    const f = buildFrame(p, { now }, true, "calendar", "portrait");
+    assert.equal(f.body.length, p.colors >= 3 ? p.width * p.height / 4 : f.body.length);
+    const up = renderScreen(orientedPanel(p, "portrait"), { now }, "calendar");
+    assert.deepEqual([up.width, up.height], [p.height, p.width]);
+  }
+  // the same frame turned half way round differs, turned back it is the same
+  const a = buildFrame(PANELS.se0398, { now }, true, "test", "landscape");
+  const b = buildFrame(PANELS.se0398, { now }, true, "test", "landscape-flip");
+  assert.notEqual(a.etag, b.etag);
+});

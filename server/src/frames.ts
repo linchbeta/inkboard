@@ -10,7 +10,9 @@ import { renderWeather } from "./screens/weather.js";
 import { renderPhoto } from "./screens/photo.js";
 import { renderPairing } from "./screens/pairing.js";
 import { currentPhotoId, loadPhoto, getPlayback, sanitizeEdits, PHOTO_CONFIG } from "./data/photos.js";
-import type { Panel } from "./panels.js";
+import { type Panel, type Orientation, Ink, orientedPanel } from "./panels.js";
+import { toNative } from "./render/orient.js";
+import { screenWithHeader, emptyNote } from "./screens/common.js";
 import { resolveTones } from "./render/dither.js";
 import { type Db, getSetting } from "./db.js";
 import { setFont } from "./render/typography.js";
@@ -59,7 +61,7 @@ async function photoContext(db: Db, now: Date, params?: Record<string, string>):
 }
 
 export const SCREENS: Record<string, Screen> = {
-  test: { name: "测试画面", render: renderTestPattern },
+  test: { name: "测试画面", render: renderTestPattern, portrait: true },
   calendar: { name: "日历", render: (p, ctx) => renderCalendar(p, ctx) },
   datecard: { name: "日期牌", render: (p, ctx) => renderDateCard(p, ctx), prepare: weatherContext },
   weather: { name: "天气", render: renderWeather, prepare: weatherContext },
@@ -100,11 +102,32 @@ export async function prepareScreen(db: Db, screenId: string, now: Date, params?
   }
 }
 
+/**
+ * The screen drawn upright on `panel` (already oriented: taller than wide when the screen
+ * stands upright). Layouts without an upright version say so instead of drawing sideways.
+ */
 export function renderScreen(panel: Panel, ctx: ScreenContext, screenId = DEFAULT_SCREEN): Canvas {
   setFont(ctx.font); // synchronous from here: concurrent requests cannot swap it
-  const c = (SCREENS[screenId] ?? SCREENS[DEFAULT_SCREEN]).render(panel, ctx);
+  const s = SCREENS[screenId] ?? SCREENS[DEFAULT_SCREEN];
+  const c = panel.height > panel.width && !s.portrait ? portraitPending(panel, ctx, s.name) : s.render(panel, ctx);
   resolveTones(c, panel);
   return c;
+}
+
+/** A layout with no upright version yet, on an upright screen: its name, and which way is up. */
+function portraitPending(panel: Panel, ctx: ScreenContext, name: string): Canvas {
+  const f = screenWithHeader(panel, ctx, name);
+  // an arrow pointing to the top edge
+  const cx = Math.round(f.W / 2), a = f.large ? 40 : 24, y0 = f.top + (f.large ? 50 : 26);
+  for (let i = 0; i < a; i++) f.c.rect(cx - i, y0 + i, cx + i + 1, y0 + i + 1, Ink.Red);
+  f.c.rect(cx - Math.round(a / 4), y0 + a, cx + Math.round(a / 4), y0 + a * 3, Ink.Red);
+  emptyNote(f, `「${name}」的竖版还在制作中，这一屏先显示这条提示。箭头指向屏幕上方。`);
+  return f.c;
+}
+
+/** The screen in orientation `o`, as the panel's own (native) canvas for the device. */
+export function renderNative(panel: Panel, ctx: ScreenContext, screenId: string, o?: Orientation): Canvas {
+  return toNative(renderScreen(orientedPanel(panel, o), ctx, screenId), o);
 }
 
 /** The pairing screen for a device nobody owns yet, as device bytes. */
@@ -116,8 +139,8 @@ export function pairingFrame(panel: Panel, ctx: ScreenContext & { pairCode?: str
 }
 
 /** 2bpp for colour panels, 1-bit BMP otherwise (InkSight firmware accepts both). */
-export function buildFrame(panel: Panel, ctx: ScreenContext, prefer2bpp: boolean, screenId = DEFAULT_SCREEN): Frame {
-  const canvas = renderScreen(panel, ctx, screenId);
+export function buildFrame(panel: Panel, ctx: ScreenContext, prefer2bpp: boolean, screenId = DEFAULT_SCREEN, o?: Orientation): Frame {
+  const canvas = renderNative(panel, ctx, screenId, o);
   const body = prefer2bpp && panel.colors >= 3 ? pack2bpp(canvas, panel) : packBmp1(canvas);
   return {
     body,

@@ -13,9 +13,12 @@ export interface Frame { c: Canvas; W: number; H: number; large: boolean; m: num
  * New canvas with the standard header: title (and optional subtitle) left, date and
  * battery right, a rule below. `top` is the first free row under the rule.
  */
+/** The large layouts (3.98", 5.83", 7.5") by the short side, so upright too; the 4.2" is not. */
+export const isLarge = (panel: Panel) => Math.min(panel.width, panel.height) >= 400;
+
 export function screenWithHeader(panel: Panel, ctx: ScreenContext, title: string, subtitle = ""): Frame {
   const { wqy12, wqy9 } = refFonts();
-  const W = panel.width, H = panel.height, large = H >= 400;
+  const W = panel.width, H = panel.height, large = isLarge(panel);
   const c = new Canvas(W, H);
   const m = large ? 20 : 10;
   const base = large ? 36 : 22;

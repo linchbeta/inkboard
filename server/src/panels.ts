@@ -107,6 +107,25 @@ export const PANELS: Record<string, Panel> = {
 };
 
 /**
+ * How a screen stands. "portrait" is the landscape panel turned a quarter counter-clockwise
+ * (its top edge on the left); the "-flip" ones are those turned half way round. Layouts are
+ * drawn upright at the oriented size (orientedPanel) and turned into the panel's own
+ * orientation for the device (render/orient.ts).
+ */
+export type Orientation = "landscape" | "portrait" | "landscape-flip" | "portrait-flip";
+export const ORIENTATIONS: [Orientation, string][] = [
+  ["landscape", "横向"], ["portrait", "纵向（逆时针转 90°）"],
+  ["landscape-flip", "横向倒置（转 180°）"], ["portrait-flip", "纵向倒置（顺时针转 90°）"],
+];
+export const isOrientation = (v: unknown): v is Orientation => ORIENTATIONS.some(([o]) => o === v);
+export const isPortrait = (o: Orientation | undefined) => o === "portrait" || o === "portrait-flip";
+
+/** The panel as layouts see it in orientation `o`: width and height swapped when upright. */
+export function orientedPanel(panel: Panel, o: Orientation | undefined): Panel {
+  return isPortrait(o) ? { ...panel, width: panel.height, height: panel.width } : panel;
+}
+
+/**
  * Find the panel matching what an InkSight-firmware device reports: same size and the
  * same number of colours (a colour panel of that size otherwise). B/W panels get none:
  * the caller uses a generic B/W panel.

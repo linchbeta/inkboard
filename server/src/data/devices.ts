@@ -8,6 +8,7 @@
 // schedule, the large-text font and live mode.
 import { type Db, type Device, getSetting } from "../db.js";
 import { DEFAULT_SCHEDULE, type Schedule } from "../schedule.js";
+import { type Orientation, isOrientation } from "../panels.js";
 
 export interface PlaylistItem {
   mode: string;
@@ -31,6 +32,8 @@ export interface DeviceSettings {
   font: "wenkai" | "sans" | "pixel";
   /** Live mode: the firmware stays awake (USB power). */
   live: boolean;
+  /** How the screen stands; layouts are drawn upright for it. */
+  orientation: Orientation;
 }
 
 interface DeviceState { cursor: number; lastMode?: string }
@@ -48,6 +51,7 @@ export function defaultSettings(db: Db): DeviceSettings {
     schedule: { ...DEFAULT_SCHEDULE },
     font: "wenkai",
     live: false,
+    orientation: "landscape",
   };
 }
 
@@ -62,6 +66,7 @@ export function getSettings(db: Db, device: Pick<Device, "settings">): DeviceSet
     ...d, ...s,
     playlist: Array.isArray(s.playlist) && s.playlist.length ? s.playlist : d.playlist,
     schedule: { ...d.schedule, ...(s.schedule ?? {}) },
+    orientation: isOrientation(s.orientation) ? s.orientation : d.orientation,
   };
 }
 
@@ -94,6 +99,7 @@ export function sanitizeSettings(s: Partial<DeviceSettings>, base: DeviceSetting
   if (s.order === "sequence" || s.order === "random" || s.order === "single") out.order = s.order;
   if (s.font === "wenkai" || s.font === "sans" || s.font === "pixel") out.font = s.font;
   if (typeof s.live === "boolean") out.live = s.live;
+  if (isOrientation(s.orientation)) out.orientation = s.orientation;
   if (s.pin === undefined || s.pin === null) out.pin = undefined;
   else if (typeof s.pin.mode === "string") out.pin = { mode: s.pin.mode, until: s.pin.until, once: s.pin.once };
   return out;

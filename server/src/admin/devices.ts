@@ -17,6 +17,10 @@ import { sleepSeconds } from "../schedule.js";
 import { batteryLevel } from "../data/calendar.js";
 import { panelOf, canvasFor } from "../deviceFrame.js";
 import { previewPng } from "../render/pack.js";
+import { ORIENTATIONS, isPortrait } from "../panels.js";
+
+/** Upright screens: a narrower preview frame. */
+const tall = (s: DeviceSettings) => (isPortrait(s.orientation) ? " tall" : "");
 import { page, ago, hm, icon } from "./layout.js";
 import { userOf } from "./auth.js";
 import { DEV_ONLY, modeName, opts, deviceName, macTail, screenChecks, formList, modeForm, safeBack, withFlash } from "./common.js";
@@ -113,7 +117,7 @@ export function deviceRoutes(app: Hono, db: Db, now: () => Date): void {
         <div class="spread" style="align-items:flex-start"><div><h2 style="margin:0">${deviceName(db, d, s)}</h2>
           <code class="mac" title="MAC 地址">${d.mac}</code></div>${status(d, s, t)}</div>
         <p class="muted small" style="margin:8px 0 12px">正在播放：${current}</p>
-        ${panel ? html`<a href="/devices/${d.mac}" class="screen" style="display:block"><img class="preview" loading="lazy" src="/preview/device/${d.mac}.png" alt="当前画面"></a>` : ""}
+        ${panel ? html`<a href="/devices/${d.mac}" class="screen${tall(s)}" style="display:block"><img class="preview" loading="lazy" src="/preview/device/${d.mac}.png" alt="当前画面"></a>` : ""}
         <div class="stats"><div class="stat"><small>电量</small><b>${battery(d.battery_v)}</b></div>
           <div class="stat"><small>信号</small><b>${signal(d.rssi)}</b></div>
           <div class="stat"><small>下次刷新</small><b>${nw ? hm(nw) : "—"}</b></div></div>
@@ -190,7 +194,8 @@ export function deviceRoutes(app: Hono, db: Db, now: () => Date): void {
     if (!d) return c.notFound();
     const b = await c.req.parseBody();
     const cur = getSettings(db, d);
-    saveSettings(db, d.mac, sanitizeSettings({ name: String(b.name ?? ""), font: String(b.font ?? "") as DeviceSettings["font"], live: b.live !== undefined, pin: cur.pin }, cur));
+    saveSettings(db, d.mac, sanitizeSettings({ name: String(b.name ?? ""), font: String(b.font ?? "") as DeviceSettings["font"], live: b.live !== undefined,
+      orientation: String(b.orientation ?? "") as DeviceSettings["orientation"], pin: cur.pin }, cur));
     return c.redirect(withFlash(`/devices/${d.mac}?tab=device`, "已保存"));
   });
 
@@ -254,7 +259,7 @@ function playTab(db: Db, d: Device, s: DeviceSettings, hasPanel: boolean): Tab {
   return {
     html: html`<div class="cols">
       <section class="card"><h2>现在显示</h2>
-        ${hasPanel ? html`<div class="screen"><img class="preview" src="/preview/device/${d.mac}.png" alt="当前画面"></div>` : html`<p class="muted">设备还没报告屏幕型号。</p>`}
+        ${hasPanel ? html`<div class="screen${tall(s)}"><img class="preview" src="/preview/device/${d.mac}.png" alt="当前画面"></div>` : html`<p class="muted">设备还没报告屏幕型号。</p>`}
         ${s.pin ? html`<div class="flash spread" style="margin:14px 0 0"><span>临时显示：<b>${pinText}</b></span>
           <form method="post" action="/admin/devices/${d.mac}/unpin"><button>恢复播放列表</button></form></div>` : ""}
         <form method="post" action="/admin/devices/${d.mac}/pin" class="row" style="margin-top:14px">
@@ -331,7 +336,7 @@ async function contentTab(db: Db, d: Device, s: DeviceSettings, now: Date, cityQ
     return html`<section class="card" id="c-${m}">
       <div class="spread"><h2 style="margin:0">${sc.name}</h2>${pill}</div>
       <div class="cols" style="margin-top:14px">
-        ${panel ? html`<div><div class="screen"><img class="preview" loading="lazy" src="/preview/${panel.id}.png?screen=${m}&dev=${d.mac}" alt="${sc.name} 预览"></div></div>` : ""}
+        ${panel ? html`<div><div class="screen${tall(s)}"><img class="preview" loading="lazy" src="/preview/${panel.id}.png?screen=${m}&dev=${d.mac}" alt="${sc.name} 预览"></div></div>` : ""}
         <div>${editor}</div></div>${sync}</section>`;
   }));
   return {
@@ -414,6 +419,8 @@ function deviceTab(db: Db, d: Device, s: DeviceSettings, now: Date): Tab {
       <form method="post" action="/admin/devices/${d.mac}/display" class="card"><h2>名称与显示</h2>
         <label class="field"><span>名称</span><input type="text" name="name" value="${s.name}" placeholder="例如 客厅、书房" maxlength="24">
           <small>不填时显示为"${deviceName(db, d, { ...s, name: "" })}"。</small></label>
+        <label class="field"><span>屏幕方向</span><select name="orientation">${opts(s.orientation, ORIENTATIONS)}</select>
+          <small>屏幕怎么摆放。纵向是把横放的屏逆时针转 90° 竖起来；画面会按这个方向正着显示。还没做竖版的布局，竖放时先显示一条提示。断网时的离线日历暂时还是横版。</small></label>
         <label class="field"><span>大字字体</span><select name="font">${opts(s.font, fontOpts)}</select>
           <small>留言、诗词、倒数日等页面的大号中文。</small></label>
         <label class="check"><input type="checkbox" name="live" ${s.live ? raw("checked") : ""}> 实时模式（常亮不休眠，适合插 USB 电源时）</label>

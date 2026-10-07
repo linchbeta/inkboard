@@ -122,6 +122,7 @@ export const CSS = `
   .preview { border-radius:10px; display:block; width:100%; height:auto; background:#dcd7cb; box-shadow:inset 0 0 0 1px #0000000f }
   .screen { padding:10px; border-radius:16px; background:linear-gradient(145deg,#3a3a3e,#1f1f22); box-shadow:0 6px 18px #00000026 }
   .screen .preview { border-radius:4px; box-shadow:none }
+  .screen.tall { max-width:340px; margin-left:auto; margin-right:auto }
   .kv { display:grid; grid-template-columns:auto 1fr; gap:6px 16px; font-size:14px; margin:0 } .kv dt { color:var(--mute) } .kv dd { margin:0 }
   .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:14px }
   .stat { background:var(--soft); border-radius:10px; padding:8px 10px } .stat small { display:block; color:var(--mute); font-size:11px } .stat b { font-size:15px }
