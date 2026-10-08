@@ -28,7 +28,7 @@ test("panels: a device's report picks the panel with its colours; B/W ones get n
 
 test("every screen renders on every panel size without throwing", () => {
   const now = new Date(2026, 9, 9, 10, 15);
-  const panels = [...Object.values(PANELS), genericPanel(296, 128), genericPanel(400, 300), genericPanel(648, 480), genericPanel(800, 480), genericPanel(640, 384), genericPanel(600, 448), genericPanel(880, 528)];
+  const panels = [...Object.values(PANELS), genericPanel(296, 128), genericPanel(400, 300), genericPanel(648, 480), genericPanel(800, 480), genericPanel(640, 384), genericPanel(600, 448), genericPanel(880, 528), genericPanel(920, 680), genericPanel(960, 640), genericPanel(960, 680)];
   for (const p of panels) {
     for (const id of Object.keys(SCREENS)) {
       const c = renderScreen(p, { now }, id);

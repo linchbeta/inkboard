@@ -35,10 +35,13 @@ static const Panel PANELS[] = {
     {"bwr75hd", 880, 528, {0, 1, 3, 3}, 2},
     {"bw75hd", 880, 528, {0, 1, 0, 0}, 1},
     {"bwr97", 960, 672, {0, 1, 3, 3}, 2},
+    {"bw576", 920, 680, {0, 1, 0, 0}, 1},
+    {"bw102", 960, 640, {0, 1, 0, 0}, 1},
+    {"bw133", 960, 680, {0, 1, 0, 0}, 1},
 };
 static const int BAND = 24;
 
-static unsigned char full[960 * 672 / 4], banded[960 * 672 / 4], band[960 * BAND / 4];
+static unsigned char full[960 * 680 / 4], banded[960 * 680 / 4], band[960 * BAND / 4];
 static int rot = 0;  // 0 landscape, 1 portrait, 2 landscape-flip, 3 portrait-flip (CalTarget::rot)
 
 // Draws the frame whole and in bands; returns its size, or 0 if the two differ.

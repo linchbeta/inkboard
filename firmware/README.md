@@ -47,11 +47,15 @@ ESP32 墨水屏的固件，在 InkSight 固件的基础上改的。它做的事�
 | 7.5 寸 HD SSD1677（880×528，微雪 7.5inch HD B、GDEH075Z90） | 黑白红 | `epd_75hd_ssd1677_bwr_c3_promini`、`_wroom32e` | 收一行写一行 | 否 |
 | 7.5 寸 HD SSD1677 黑白（880×528） | 黑白 | `epd_75hd_ssd1677_bw_c3_promini`、`_wroom32e` | 58 KB 黑白缓冲 | 否 |
 | 9.7 寸三色电子价签屏（Solum，960×672） | 黑白红 | `epd_97_ssd_bwr_c3_promini`、`_wroom32e`、`_yd_s3_n16r8` | 收一行写一行；但 imgBuf 要 80 KB，建议用 S3 | 否 |
+| GxEPD2 的其它黑白屏：3.97 寸 GDEM0397T81、4.26 寸 GDEQ0426T82、4.2 寸 SE0420NQ04、5.83 寸 GDEW0583T8、7.5 寸 GDEY075T7（800×480 等） | 黑白 | `epd_397_gdem0397t81_*`、`epd_426_gdeq0426t82_*`、`epd_42_se0420nq04_*`、`epd_583_gdew0583t8_*`、`epd_75_gdey075t7_*`（`_c3_promini`、`_wroom32e`） | 黑白缓冲（15–48 KB），驱动是 GxEPD2 库 | 否 |
+| GxEPD2 的大尺寸黑白屏：5.76 寸 GDEH0576T81（920×680，没有局刷）、10.2 寸 GDEM102T91、11.6 寸 GDEH116T91（960×640）、13.3 寸 GDEM133T91（960×680） | 黑白 | `epd_576_gdeh0576t81_*`、`epd_102_gdem102t91_*`、`epd_116_gdeh116t91_*`、`epd_133_gdem133t91_*`（另有 `_yd_s3_n16r8`） | 黑白缓冲 75–80 KB，建议用 S3 | 否 |
 | 2.9 寸 | 黑白 | `epd_29_c3_promini`、`_wroom32e` | 没有适配：后端的版面放不下，也没有离线日历 | — |
 
 5.65 寸七色屏和 7.5 寸、5.83 寸 V1 的驱动是 `src/epd_driver_uc8159.cpp`（芯片都是 UC8159）；7.3 寸七色和六色屏是 `src/epd_driver_73_color.cpp`，屏厂没公开这两块屏的驱动芯片型号，初始化命令和 3.98 寸 A1 的 JD79661 几乎一样。这些屏的控制器每个像素存 4 位，整帧按顺序写进去，所以收到一行 2bpp 就换算成屏幕自己的颜色编号直接写，不用整帧内存。七色和六色屏目前只用其中的黑白黄红四种（后端的画面就是这四种颜色），照片也按这四种颜色抖动。注意 5.83 寸分两代：V1 是 600×448 的 UC8159，V2（背面贴着 V2）是 648×480 的 UC8179，用上面的 `epd_583_uc8179_*`。V1 三色屏如果灰蒙蒙或者对比度不对，可以在编译参数里加 `-DUC8159_VCOM=0x..` 调 VCOM（默认 0x28）。
 
 UC8176、JD79665、SSD1677 和 UC8159 V1 的初始化参数是从 [EPD-nRF5](https://github.com/tsl0922/EPD-nRF5) 移植的（离线日历也出自这个项目，同样是 GPL-3.0）；9.7 寸价签屏的寄存器值来自 [atc1441/Tag_FW_nRF52811](https://github.com/atc1441/Tag_FW_nRF52811)。这些面板是参照 [MiaooAim](https://github.com/bluseliu50/MiaooAim_fork) 支持的屏挑的，代码按这里的驱动结构重写，没有直接搬它的文件。
+
+黑白屏除了上面这些，[GxEPD2](https://github.com/ZinggJM/GxEPD2) 库（固件本来就用它，GPL-3.0）里横版、尺寸放得下版面的黑白屏也都接上了，在 `src/epd_driver.cpp` 里一屏一行。要再加 GxEPD2 的黑白屏，照着那几行加一个宏和编译环境就行，屏的原生分辨率要和 `EPD_WIDTH`/`EPD_HEIGHT` 一致（编译时会检查）。
 
 微雪 4.2inch B V2 有两种控制器：新版和 HINK 一样是 SSD1683 类（用 `epd_42_hink_ssd1683_*`），旧版是 UC8176（用 `epd_42_uc8176_bwr_*`）。JD79665 的屏直接收后端的 2bpp 数据，不用换算；SSD1677 的 HD 屏分辨率大，C3 上黑白版光黑白缓冲就要 58 KB，内存比 7.5 寸紧一些。
 

@@ -1,7 +1,7 @@
 """
 Generates src/setup_screen_data.h: the screen shown in WiFi setup mode, per panel size
 (768x552, 400x300, 648x480 / 800x480 for the 5.83" and 7.5" (and the 7.3"), 600x448 for the
-5.65" and 5.83" V1 and 640x384 for the 7.5" V1, 880x528 for the 7.5" HD, 960x672 for the 9.7"): a header, two numbered steps (the hotspot to join, in a
+5.65" and 5.83" V1 and 640x384 for the 7.5" V1, 880x528 for the 7.5" HD, 960x672 for the 9.7", 920x680 / 960x640 / 960x680 for the large B/W ones): a header, two numbered steps (the hotspot to join, in a
 black pill; the address to open) and a footer with how long it lasts / how to restart.
 
 The static part is laid out here with the backend's pixel fonts (../server/assets/fonts)
@@ -152,14 +152,19 @@ def layout_528(W, m):
         "foot": 424, "hint1": 460, "hint2": 494})
 
 
-def layout_672(W, m):
-    """9.7" (960x672, ~121 ppi): the 3.98" fonts, laid out over the taller screen."""
-    return design(W, 672, m, {
+def layout_672(W, m, H=672):
+    """9.7" (960x672, ~121 ppi): the 3.98" fonts, laid out over the taller screen. Also the
+    other large ones (920x680, 960x640, 960x680): the same, its rows moved with the height."""
+    k = H / 672
+    sz = {"head": 76, "icon": 24, "iconw": 4, "gap": 8, "rule": 100, "line": 3, "col": 96,
+          "step1": 190, "step2": 390, "numdrop": 70, "vgap": 20, "pillh": 90, "pad": 28, "nudge": 2,
+          "foot": 556, "hint1": 600, "hint2": 640}
+    for r in ("rule", "step1", "step2", "foot", "hint1", "hint2"):
+        sz[r] = round(sz[r] * k)
+    return design(W, H, m, {
         "title": "lxgw-wenkai-32px.bdf.gz", "label": "lxgw-wenkai-28px.bdf.gz", "big": "inter-medium-64px.bdf.gz",
         "num": "barlow-condensed-bold-96px.bdf.gz", "hint": "lxgw-wenkai-24px.bdf.gz", "brand": "inter-medium-32px.bdf.gz",
-    }, {"head": 76, "icon": 24, "iconw": 4, "gap": 8, "rule": 100, "line": 3, "col": 96,
-        "step1": 190, "step2": 390, "numdrop": 70, "vgap": 20, "pillh": 90, "pad": 28, "nudge": 2,
-        "foot": 556, "hint1": 600, "hint2": 640})
+    }, sz)
 
 
 def layout_448(W, m):
@@ -242,7 +247,10 @@ def main():
                           ("5.65", "EPD_WIDTH == 600 && EPD_HEIGHT == 448", lambda: layout_448(600, 28)),
                           ("7.5v1", "EPD_WIDTH == 640 && EPD_HEIGHT == 384", lambda: layout_384(640, 28)),
                           ("7.5hd", "EPD_WIDTH == 880 && EPD_HEIGHT == 528", lambda: layout_528(880, 44)),
-                          ("9.7", "EPD_WIDTH == 960 && EPD_HEIGHT == 672", lambda: layout_672(960, 56))):
+                          ("9.7", "EPD_WIDTH == 960 && EPD_HEIGHT == 672", lambda: layout_672(960, 56)),
+                          ("5.76", "EPD_WIDTH == 920 && EPD_HEIGHT == 680", lambda: layout_672(920, 52, 680)),
+                          ("10.2", "EPD_WIDTH == 960 && EPD_HEIGHT == 640", lambda: layout_672(960, 56, 640)),
+                          ("13.3", "EPD_WIDTH == 960 && EPD_HEIGHT == 680", lambda: layout_672(960, 56, 680))):
         img, font, name_x, base = fn()
         out += emit(tag, cond, img, font, name_x, base)
         if preview:

@@ -21,7 +21,8 @@ if (all) {
     ["color565", PANELS.color565, true], ["bwr75v1", PANELS.bwr75v1, true], ["bwry75", PANELS.bwry75, true],
     ["bw75v1", genericPanel(640, 384), false], ["bwr583v1", PANELS.bwr583v1, true], ["bw583v1", genericPanel(600, 448), false],
     ["bwry583", PANELS.bwry583, true], ["bwr75hd", PANELS.bwr75hd, true], ["bw75hd", genericPanel(880, 528), false],
-    ["bwr97", PANELS.bwr97, true]);
+    ["bwr97", PANELS.bwr97, true], ["bw576", genericPanel(920, 680), false], ["bw102", genericPanel(960, 640), false],
+    ["bw133", genericPanel(960, 680), false]);
 }
 
 /** A 1-bit BMP's pixels as the firmware keeps them (network.cpp): top row first, W/8 bytes a row. */
