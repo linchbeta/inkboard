@@ -13,7 +13,7 @@ ESP32 墨水屏的固件，在 InkSight 固件的基础上改的。它做的事�
 | 3.98 寸 SE0398NZ07 A0，768×552，黑白黄红 | `epd_398_se0398nz07a0_c3_promini` |
 | 4.2 寸 HINK SSD1683，400×300，黑白红 | `epd_42_hink_ssd1683_c3_promini` |
 
-3.98 寸还有一个 A1 版（驱动芯片是 JD79661，排线上印着 A1），对应 `epd_398_se0398nz07a1_c3_promini`。驱动按参考资料写好了，但我手上没有 A1 的屏，没测过。
+3.98 寸还有一个 A1 版（驱动芯片是 JD79661，排线上印着 A1），对应 `epd_398_se0398nz07a1_c3_promini`，也实测过。
 
 每个环境还有几个变体：`_led5` 是给 LED 接在 GPIO5 上的旧板子用的（新板子的 LED 在 GPIO3）；`_test` 每分钟醒一次，配合 `tools/mock_server.py` 测功能；`_selftest` 不联网，直接显示一张 1 像素线条、小字和四色色块的测试图，用来看屏幕本身的显示效果。
 
@@ -24,9 +24,9 @@ ESP32 墨水屏的固件，在 InkSight 固件的基础上改的。它做的事�
 | 屏幕 | 颜色 | 编译环境 | 画面怎么写进屏幕 | 实测 |
 |---|---|---|---|---|
 | 3.98 寸 SE0398NZ07 A0 | 黑白黄红 | `epd_398_se0398nz07a0_c3_promini`、`_wroom32e`、`_yd_s3_n16r8` | 收一行写一行，不占整帧内存 | 是 |
-| 3.98 寸 SE0398NZ07 A1 | 黑白黄红 | `epd_398_se0398nz07a1_c3_promini`、`_yd_s3_n16r8` | 同上 | 否 |
+| 3.98 寸 SE0398NZ07 A1 | 黑白黄红 | `epd_398_se0398nz07a1_c3_promini`、`_yd_s3_n16r8` | 同上 | 是（C3 promini） |
 | 4.2 寸 HINK SSD1683 | 黑白红 | `epd_42_hink_ssd1683_c3_promini`、`_wroom32e`、`_yd_s3_n16r8` | 收一行写一行 | 是 |
-| 5.83 寸 UC8179（微雪 V2） | 黑白红 | `epd_583_uc8179_bwr_c3_promini`、`_bwr_wroom32e` | 黑白部分逐行写，红色部分先放内存（39 KB） | 否 |
+| 5.83 寸 UC8179（微雪 V2） | 黑白红 | `epd_583_uc8179_bwr_c3_promini`、`_bwr_wroom32e` | 黑白部分逐行写，红色部分先放内存（39 KB） | 是（WROOM-32E） |
 | 7.5 寸 GDEY075Z08 | 黑白红 | `epd_75_uc8179_c3_promini`、`_wroom32e` | 同上，红色部分 48 KB | 否 |
 | 4.2 寸 GDEM042F52 | 黑白黄红 | `epd_42_gdem042f52_jd79668_c3_promini`、`_c3_std`、`_wroom32e` | 整帧放内存，30 KB | 否 |
 | 4.2 寸 DKE DEPG0420RY683 | 黑白黄红 | `epd_42_depg0420ry683_ssd1683_c3_promini` | 整帧放内存，30 KB | 否 |

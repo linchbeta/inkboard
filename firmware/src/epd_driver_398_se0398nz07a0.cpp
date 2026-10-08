@@ -12,7 +12,7 @@
 //
 // A1 (JD79661, -DSE0398_A1): long init (parameters from the EPD-nRF5 reference), then
 // one full-screen window and the whole frame in order into DTM1 -- no row mapping.
-// Not yet verified on A1 hardware.
+// Verified on A1 hardware.
 
 #include "epd_driver.h"
 #include "config.h"
