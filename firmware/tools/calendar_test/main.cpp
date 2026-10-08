@@ -25,6 +25,10 @@ static const Panel PANELS[] = {
     {"bw42", 400, 300, {0, 1, 0, 0}, 1},
     {"bw583", 648, 480, {0, 1, 0, 0}, 1},
     {"bw75", 800, 480, {0, 1, 0, 0}, 1},
+    {"color565", 600, 448, {0, 1, 2, 3}, 2},
+    {"bwr75v1", 640, 384, {0, 1, 3, 3}, 2},
+    {"color73", 800, 480, {0, 1, 2, 3}, 2},
+    {"bw75v1", 640, 384, {0, 1, 0, 0}, 1},
 };
 static const int BAND = 24;
 
@@ -59,7 +63,7 @@ int main(int argc, char **argv) {
         return 0;
     }
     int from = argc > 2 ? atoi(argv[1]) : 2025, to = argc > 2 ? atoi(argv[2]) : 2030;
-    int panels = argc > 3 && !strcmp(argv[3], "all") ? 8 : 2;
+    int panels = argc > 3 && !strcmp(argv[3], "all") ? (int)(sizeof PANELS / sizeof PANELS[0]) : 2;
     // a fourth argument: the orientation, as expected.ts takes it
     if (argc > 4) {
         static const char *O[] = {"landscape", "portrait", "landscape-flip", "portrait-flip"};

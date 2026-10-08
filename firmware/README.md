@@ -19,7 +19,7 @@ ESP32 墨水屏的固件，在 InkSight 固件的基础上改的。它做的事�
 
 ## 支持的屏幕
 
-上游支持的面板和开发板都在 `boards/other_panels.ini` 里，C3 的环境都带 `_led5` 变体。`_yd_s3_n16r8` 是 YD-ESP32-S3 N16R8 开发板（引脚见 `src/config.h`，串口日志走板上的 USB 转串口口），还没在真机上试过。除了 2.9 寸，每种屏都能显示后端的画面，也都有离线日历，日历和服务器画的一个像素都不差（用 `tools/calendar_test` 对比过）。
+上游支持的面板、后来加的面板和开发板都在 `boards/other_panels.ini` 里，C3 的环境都带 `_led5` 变体。`_yd_s3_n16r8` 是 YD-ESP32-S3 N16R8 开发板（引脚见 `src/config.h`，串口日志走板上的 USB 转串口口），还没在真机上试过。除了 2.9 寸，每种屏都能显示后端的画面，也都有离线日历，日历和服务器画的一个像素都不差（用 `tools/calendar_test` 对比过）。
 
 | 屏幕 | 颜色 | 编译环境 | 画面怎么写进屏幕 | 实测 |
 |---|---|---|---|---|
@@ -34,7 +34,14 @@ ESP32 墨水屏的固件，在 InkSight 固件的基础上改的。它做的事�
 | 4.2 寸黑白屏 | 黑白 | 微雪 V2（`epd_42_wsv2_ssd1683_*`）、中景园（`epd_42_zhongjingyuan_bw_*`）、GDEY042T81 / GDEW042T2 / GDEW042M01（`epd_42_gxepd2_*`）、WFT0420CZ15 黑白（`epd_42_wft0cz15_bw_*`） | 用固件本来就有的 15 KB 黑白缓冲 | 否 |
 | 5.83 寸黑白屏 | 黑白 | `epd_583_c3_promini`、`epd_583_wroom32e`，以及把 UC8179 三色屏当黑白用的 `epd_583_uc8179_*` | 38 KB 黑白缓冲 | 否 |
 | 7.5 寸黑白屏 | 黑白 | `epd_75_c3_promini`、`epd_75_wroom32e` | 48 KB 黑白缓冲 | 否 |
+| 5.65 寸七色 ACeP（UC8159C，微雪 5.65inch F、GDEP0565D90） | 黑白黄红（七色里的四种） | `epd_565_uc8159_c3_promini`、`_wroom32e` | 收一行写一行，不占整帧内存 | 否 |
+| 7.3 寸七色 ACeP（微雪 7.3inch F、GDEY073D46） | 黑白黄红（七色里的四种） | `epd_73_acep_c3_promini`、`_wroom32e` | 同上 | 否 |
+| 7.3 寸六色 Spectra 6（微雪 7.3inch E、GDEP073E01） | 黑白黄红（六色里的四种） | `epd_73_spectra6_c3_promini`、`_wroom32e` | 同上 | 否 |
+| 7.5 寸 V1 三色（UC8159，640×384，微雪 7.5inch B V1、GDEW075Z09） | 黑白红 | `epd_75_uc8159_bwr_c3_promini`、`_wroom32e` | 同上 | 否 |
+| 7.5 寸 V1 黑白（UC8159，640×384，微雪 7.5inch V1、GDEW075T8） | 黑白 | `epd_75_uc8159_bw_c3_promini`、`_wroom32e` | 30 KB 黑白缓冲 | 否 |
 | 2.9 寸 | 黑白 | `epd_29_c3_promini`、`_wroom32e` | 没有适配：后端的版面放不下，也没有离线日历 | — |
+
+5.65 寸、7.3 寸彩色屏和 7.5 寸 V1 的驱动在 `src/epd_driver_4bpp.cpp`。这些屏的控制器每个像素存 4 位，整帧按顺序写进去，所以收到一行 2bpp 就换算成屏幕自己的颜色编号直接写，不用整帧内存。七色和六色屏目前只用其中的黑白黄红四种（后端的画面就是这四种颜色），照片也按这四种颜色抖动。7.5 寸 V1 三色屏如果灰蒙蒙或者对比度不对，可以在编译参数里加 `-DUC8159_VCOM=0x..` 调 VCOM（默认 0x28，黑白屏默认 0x1E）。
 
 逐行写入的好处是下载画面时不用留整帧的内存，走 HTTPS 时余量最足（一条 HTTPS 连接本身就要 45 到 50 KB）。颜色由后端按面板换算好：三色屏上黄色显示成红色，黑白屏上红和黄都显示成黑色。
 
@@ -109,7 +116,7 @@ LED 常亮表示在配网模式，等手机连热点 `InkBoard-XXXX`；慢闪是
 | `src/main.cpp` | 启动流程、状态机、按键、深度睡眠 |
 | `src/network.cpp` | WiFi 和跟后端打交道：注册、心跳、取画面 |
 | `src/portal.cpp`、`data/portal_html.h` | 配网热点和网页 |
-| `src/display.cpp`、`src/epd_driver*.cpp` | 显示和各种屏的驱动。3.98 寸（A0 和 A1）、4.2 寸 HINK、UC8179 各有单独的文件，其它上游的屏在 `epd_driver.cpp` 里 |
+| `src/display.cpp`、`src/epd_driver*.cpp` | 显示和各种屏的驱动。3.98 寸（A0 和 A1）、4.2 寸 HINK、UC8179、每像素 4 位的屏（UC8159、7.3 寸彩色）各有单独的文件，其它上游的屏在 `epd_driver.cpp` 里 |
 | `src/storage.cpp` | 存 WiFi、服务器地址和配对码 |
 | `src/offline_calendar.cpp` | 时钟、离线日历、只当日历用、留言缓存、节假日更新 |
 | `src/calendar_render.cpp`、`src/calendar_data.h` | 本地月历，是服务器日历的 C++ 移植版，以及它要用的数据 |

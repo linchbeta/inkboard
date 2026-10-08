@@ -1,6 +1,7 @@
 """
 Generates src/setup_screen_data.h: the screen shown in WiFi setup mode, per panel size
-(768x552, 400x300, and 648x480 / 800x480 for the 5.83" and 7.5"): a header, two numbered steps (the hotspot to join, in a
+(768x552, 400x300, 648x480 / 800x480 for the 5.83" and 7.5" (and the 7.3"), 600x448 for the
+5.65" and 640x384 for the 7.5" V1): a header, two numbered steps (the hotspot to join, in a
 black pill; the address to open) and a footer with how long it lasts / how to restart.
 
 The static part is laid out here with the backend's pixel fonts (../server/assets/fonts)
@@ -141,6 +142,26 @@ def layout_480(W, m):
         "foot": 384, "hint1": 418, "hint2": 450})
 
 
+def layout_448(W, m):
+    """5.65" (600x448): the 480 layout, 32 px shorter (the steps and footer moved up)."""
+    return design(W, 448, m, {
+        "title": "lxgw-wenkai-28px.bdf.gz", "label": "lxgw-wenkai-24px.bdf.gz", "big": "inter-medium-48px.bdf.gz",
+        "num": "barlow-condensed-bold-72px.bdf.gz", "hint": "lxgw-wenkai-20px.bdf.gz", "brand": "inter-medium-24px.bdf.gz",
+    }, {"head": 52, "icon": 18, "iconw": 3, "gap": 6, "rule": 70, "line": 2, "col": 64,
+        "step1": 122, "step2": 254, "numdrop": 52, "vgap": 14, "pillh": 66, "pad": 20, "nudge": 2,
+        "foot": 356, "hint1": 390, "hint2": 422})
+
+
+def layout_384(W, m):
+    """7.5" V1 (640x384, ~100 ppi): between the 4.2" and the 480 layouts."""
+    return design(W, 384, m, {
+        "title": "lxgw-wenkai-24px.bdf.gz", "label": "lxgw-wenkai-20px.bdf.gz", "big": "inter-medium-32px.bdf.gz",
+        "num": "barlow-condensed-bold-56px.bdf.gz", "hint": "lxgw-wenkai-20px.bdf.gz", "brand": "inter-medium-20px.bdf.gz",
+    }, {"head": 40, "icon": 15, "iconw": 3, "gap": 5, "rule": 54, "line": 2, "col": 52,
+        "step1": 96, "step2": 204, "numdrop": 40, "vgap": 11, "pillh": 50, "pad": 16, "nudge": 1,
+        "foot": 300, "hint1": 332, "hint2": 362})
+
+
 def pack(img):
     """imgBuf layout: 1 bit per pixel, MSB first, 1 = white."""
     W, H = img.size
@@ -197,7 +218,9 @@ def main():
     for tag, cond, fn in (("3.98", "EPD_WIDTH == 768 && EPD_HEIGHT == 552", layout_398),
                           ("4.2", "EPD_WIDTH == 400 && EPD_HEIGHT == 300", layout_42),
                           ("5.83", "EPD_WIDTH == 648 && EPD_HEIGHT == 480", lambda: layout_480(648, 28)),
-                          ("7.5", "EPD_WIDTH == 800 && EPD_HEIGHT == 480", lambda: layout_480(800, 40))):
+                          ("7.5", "EPD_WIDTH == 800 && EPD_HEIGHT == 480", lambda: layout_480(800, 40)),
+                          ("5.65", "EPD_WIDTH == 600 && EPD_HEIGHT == 448", lambda: layout_448(600, 28)),
+                          ("7.5v1", "EPD_WIDTH == 640 && EPD_HEIGHT == 384", lambda: layout_384(640, 28))):
         img, font, name_x, base = fn()
         out += emit(tag, cond, img, font, name_x, base)
         if preview:
