@@ -104,8 +104,8 @@ export const PANELS: Record<string, Panel> = {
     cornerRadius: 0,
     measured: { ...MEASURED, yellow: MEASURED.red },
   },
-  // Panels of the 4 bit/pixel driver (firmware/src/epd_driver_4bpp.cpp), not yet checked on
-  // hardware. The 7-colour and Spectra 6 panels show black, white, yellow and red of their
+  // Panels of the 4 bit/pixel, JD79665 and SSD1677 drivers (firmware/src/epd_driver_4bpp.cpp,
+  // _jd79665.cpp, _ssd1677.cpp), not yet checked on hardware. The 7-colour and Spectra 6 panels show black, white, yellow and red of their
   // colours; the firmware turns the 2bpp codes into the panel's own colour indices.
   // 5.65" 7-colour ACeP (UC8159C).
   color565: {
@@ -143,17 +143,41 @@ export const PANELS: Record<string, Panel> = {
     cornerRadius: 0,
     measured: { ...MEASURED, yellow: MEASURED.red },
   },
-  // 7.3" 7-colour ACeP and Spectra 6.
-  color73: {
-    id: "color73",
-    name: '7.3" colour (B/W/Y/R)',
+  // 800x480 B/W/Y/R: the 7.5" JD79665 (GDEM075F52), the 7.3" 7-colour ACeP and Spectra 6.
+  bwry75: {
+    id: "bwry75",
+    name: '7.5" / 7.3" B/W/Y/R',
     width: 800,
     height: 480,
     colors: 4,
     codes: [0b00, 0b01, 0b10, 0b11],
-    ppi: 128,
+    ppi: 126,
     cornerRadius: 0,
     measured: MEASURED,
+  },
+  // 5.83" B/W/Y/R 648x480 (JD79665).
+  bwry583: {
+    id: "bwry583",
+    name: '5.83" B/W/Y/R',
+    width: 648,
+    height: 480,
+    colors: 4,
+    codes: [0b00, 0b01, 0b10, 0b11],
+    ppi: 138,
+    cornerRadius: 0,
+    measured: MEASURED,
+  },
+  // 7.5" HD B/W/R 880x528 (SSD1677): yellow shows red.
+  bwr75hd: {
+    id: "bwr75hd",
+    name: '7.5" HD B/W/R',
+    width: 880,
+    height: 528,
+    colors: 3,
+    codes: [0b00, 0b01, 0b11, 0b11],
+    ppi: 137,
+    cornerRadius: 0,
+    measured: { ...MEASURED, yellow: MEASURED.red },
   },
 };
 

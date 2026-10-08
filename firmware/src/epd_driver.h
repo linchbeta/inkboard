@@ -64,7 +64,8 @@ void epdDisplay2bppPaged(const char *path);
 #if (defined(EPD_PANEL_398_SE0398NZ07A0) || defined(EPD_PANEL_42_HINK_SSD1683) \
      || defined(EPD_PANEL_583_UC8179) || defined(EPD_PANEL_75_GDEY075Z08) \
      || defined(EPD_PANEL_565_UC8159) || defined(EPD_PANEL_75_UC8159_BWR) || defined(EPD_PANEL_583_UC8159_BWR) \
-     || defined(EPD_PANEL_73_ACEP) || defined(EPD_PANEL_73_SPECTRA6)) \
+     || defined(EPD_PANEL_73_ACEP) || defined(EPD_PANEL_73_SPECTRA6) || defined(EPD_PANEL_42_UC8176_BWR) \
+     || defined(EPD_PANEL_75_JD79665) || defined(EPD_PANEL_583_JD79665) || defined(EPD_PANEL_75HD_SSD1677_BWR)) \
     && ((defined(EPD_BPP) && EPD_BPP >= 2) || defined(EPD_COLOR_PAGED))  // (colour builds)
 #define EPD_STREAMS_FRAMES 1
 // Row-streaming frame API: a caller only needs one 2bpp row (W/4 bytes) at a time.

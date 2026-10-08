@@ -10,7 +10,10 @@ test("panels: a device's report picks the panel with its colours; B/W ones get n
   assert.equal(matchPanel(768, 552, 4)?.id, "se0398");
   assert.equal(matchPanel(648, 480, 3)?.id, "bwr583");
   assert.equal(matchPanel(800, 480, 3)?.id, "bwr75");
-  assert.equal(matchPanel(800, 480, 4)?.id, "color73");
+  assert.equal(matchPanel(800, 480, 4)?.id, "bwry75");
+  assert.equal(matchPanel(648, 480, 4)?.id, "bwry583");
+  assert.equal(matchPanel(880, 528, 3)?.id, "bwr75hd");
+  assert.equal(matchPanel(880, 528, 2), undefined);
   assert.equal(matchPanel(600, 448, 4)?.id, "color565");
   assert.equal(matchPanel(640, 384, 3)?.id, "bwr75v1");
   assert.equal(matchPanel(640, 384, 2), undefined);
@@ -24,7 +27,7 @@ test("panels: a device's report picks the panel with its colours; B/W ones get n
 
 test("every screen renders on every panel size without throwing", () => {
   const now = new Date(2026, 9, 9, 10, 15);
-  const panels = [...Object.values(PANELS), genericPanel(296, 128), genericPanel(400, 300), genericPanel(648, 480), genericPanel(800, 480), genericPanel(640, 384), genericPanel(600, 448)];
+  const panels = [...Object.values(PANELS), genericPanel(296, 128), genericPanel(400, 300), genericPanel(648, 480), genericPanel(800, 480), genericPanel(640, 384), genericPanel(600, 448), genericPanel(880, 528)];
   for (const p of panels) {
     for (const id of Object.keys(SCREENS)) {
       const c = renderScreen(p, { now }, id);

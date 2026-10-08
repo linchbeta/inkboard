@@ -10,7 +10,8 @@
 //                             (the 648x480 5.83" V2 is a UC8179: epd_driver_uc8179.cpp)
 //   EPD_PANEL_73_ACEP         7.3" ACeP 7-colour 800x480 (Waveshare 7.3" F, GDEY073D46)
 //   EPD_PANEL_73_SPECTRA6     7.3" Spectra 6 800x480 (Waveshare 7.3" E, GDEP073E01)
-// Init sequences follow the Waveshare / GxEPD2 references. None of these has been
+// Init sequences: the UC8159 V1 panels as EPD-nRF5 (GPL-3.0, like the offline calendar),
+// the others as the Waveshare / GxEPD2 references. None of these has been
 // checked on hardware here yet.
 //
 // The frame arrives as 2bpp codes (00 black, 01 white, 10 yellow, 11 red; the server
@@ -167,24 +168,20 @@ static void controllerInit() {
     delay(100);
     sendCommandData(0x50, {0x37});
 #elif defined(UC8159_V1)
-    // Waveshare epd7in5 / epd7in5b / epd5in83 / epd5in83b (V1), GxEPD2_750 / _750c / _583 / _583c
+    // as EPD-nRF5 (UC81xx.c), the same for the B/W and B/W/R panels
 #ifndef UC8159_VCOM
-#if defined(UC8159_V1_BWR)
 #define UC8159_VCOM 0x28
-#else
-#define UC8159_VCOM 0x1E
-#endif
 #endif
     sendCommandData(0x01, {0x37, 0x00});              // PWR
     sendCommandData(0x00, {0xCF, 0x08});              // PSR
-    sendCommandData(0x06, {0xC7, 0xCC, 0x28});        // BTST
-    sendCommandData(0x30, {0x3C});                    // PLL
-    sendCommandData(0x41, {0x00});                    // TSE
+    sendCommandData(0x30, {0x3A});                    // PLL
+    sendCommandData(0x82, {UC8159_VCOM});             // VDCS (-DUC8159_VCOM=0x.. to tune)
+    sendCommandData(0x06, {0xC7, 0xCC, 0x15});        // BTST
     sendCommandData(0x50, {0x77});                    // CDI
     sendCommandData(0x60, {0x22});                    // TCON
-    sendResolution();
-    sendCommandData(0x82, {UC8159_VCOM});             // VDCS (-DUC8159_VCOM=0x.. to tune)
+    sendCommandData(0x65, {0x00});                    // flash control
     sendCommandData(0xE5, {0x03});                    // flash mode
+    sendResolution();
 #elif defined(EPD_PANEL_73_ACEP)
     // Waveshare epd7in3f
     delay(30);

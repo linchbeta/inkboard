@@ -1,7 +1,7 @@
 """
 Generates src/setup_screen_data.h: the screen shown in WiFi setup mode, per panel size
 (768x552, 400x300, 648x480 / 800x480 for the 5.83" and 7.5" (and the 7.3"), 600x448 for the
-5.65" and 5.83" V1 and 640x384 for the 7.5" V1): a header, two numbered steps (the hotspot to join, in a
+5.65" and 5.83" V1 and 640x384 for the 7.5" V1, 880x528 for the 7.5" HD): a header, two numbered steps (the hotspot to join, in a
 black pill; the address to open) and a footer with how long it lasts / how to restart.
 
 The static part is laid out here with the backend's pixel fonts (../server/assets/fonts)
@@ -142,6 +142,16 @@ def layout_480(W, m):
         "foot": 384, "hint1": 418, "hint2": 450})
 
 
+def layout_528(W, m):
+    """7.5" HD (880x528, ~137 ppi): the 480 layout, a little more room between the parts."""
+    return design(W, 528, m, {
+        "title": "lxgw-wenkai-28px.bdf.gz", "label": "lxgw-wenkai-24px.bdf.gz", "big": "inter-medium-48px.bdf.gz",
+        "num": "barlow-condensed-bold-72px.bdf.gz", "hint": "lxgw-wenkai-20px.bdf.gz", "brand": "inter-medium-24px.bdf.gz",
+    }, {"head": 56, "icon": 18, "iconw": 3, "gap": 6, "rule": 76, "line": 2, "col": 64,
+        "step1": 144, "step2": 298, "numdrop": 52, "vgap": 14, "pillh": 66, "pad": 20, "nudge": 2,
+        "foot": 424, "hint1": 460, "hint2": 494})
+
+
 def layout_448(W, m):
     """5.65" and 5.83" V1 (600x448): the 480 layout, 32 px shorter (the steps and footer moved up)."""
     return design(W, 448, m, {
@@ -220,7 +230,8 @@ def main():
                           ("5.83", "EPD_WIDTH == 648 && EPD_HEIGHT == 480", lambda: layout_480(648, 28)),
                           ("7.5", "EPD_WIDTH == 800 && EPD_HEIGHT == 480", lambda: layout_480(800, 40)),
                           ("5.65", "EPD_WIDTH == 600 && EPD_HEIGHT == 448", lambda: layout_448(600, 28)),
-                          ("7.5v1", "EPD_WIDTH == 640 && EPD_HEIGHT == 384", lambda: layout_384(640, 28))):
+                          ("7.5v1", "EPD_WIDTH == 640 && EPD_HEIGHT == 384", lambda: layout_384(640, 28)),
+                          ("7.5hd", "EPD_WIDTH == 880 && EPD_HEIGHT == 528", lambda: layout_528(880, 44))):
         img, font, name_x, base = fn()
         out += emit(tag, cond, img, font, name_x, base)
         if preview:
