@@ -124,8 +124,9 @@ static const int COLOR_BUF_LEN = (W * H) / 4;  // 2bpp: 4 pixels per byte
 #endif
 
 // ── 4 bit/pixel controllers (epd_driver_4bpp.cpp) ────────────
-// UC8159 (5.65" 7-colour, 7.5" 640x384 B/W/R and B/W) and the 7.3" 7-colour / Spectra 6.
+// UC8159 (5.65" 7-colour, 7.5" 640x384 and 5.83" 600x448 B/W/R and B/W) and the 7.3" 7-colour / Spectra 6.
 #if defined(EPD_PANEL_565_UC8159) || defined(EPD_PANEL_75_UC8159_BWR) || defined(EPD_PANEL_75_UC8159_BW) \
+    || defined(EPD_PANEL_583_UC8159_BWR) || defined(EPD_PANEL_583_UC8159_BW) \
     || defined(EPD_PANEL_73_ACEP) || defined(EPD_PANEL_73_SPECTRA6)
 #define EPD_CONTROLLER_4BPP
 #endif
@@ -133,7 +134,7 @@ static const int COLOR_BUF_LEN = (W * H) / 4;  // 2bpp: 4 pixels per byte
 // ── EPD color capability ─────────────────────────────────────
 // 2 = BW only, 3 = BWR (tri-color), 4 = BWRY (quad-color)
 #if (defined(EPD_CONTROLLER_UC8179) || defined(EPD_PANEL_42_HINK_SSD1683) || defined(EPD_PANEL_42_WFT) \
-     || defined(EPD_PANEL_75_UC8159_BWR)) && (EPD_BPP >= 2 || defined(EPD_COLOR_PAGED))
+     || defined(EPD_PANEL_75_UC8159_BWR) || defined(EPD_PANEL_583_UC8159_BWR)) && (EPD_BPP >= 2 || defined(EPD_COLOR_PAGED))
 #define EPD_COLOR_CAPABILITY 3
 #elif EPD_BPP >= 2 || defined(EPD_COLOR_PAGED)
 #define EPD_COLOR_CAPABILITY 4

@@ -131,6 +131,18 @@ export const PANELS: Record<string, Panel> = {
     cornerRadius: 0,
     measured: { ...MEASURED, yellow: MEASURED.red },
   },
+  // 5.83" V1 B/W/R 600x448 (UC8159): yellow shows red. (The 5.83" V2, 648x480, is bwr583.)
+  bwr583v1: {
+    id: "bwr583v1",
+    name: '5.83" V1 B/W/R',
+    width: 600,
+    height: 448,
+    colors: 3,
+    codes: [0b00, 0b01, 0b11, 0b11],
+    ppi: 128,
+    cornerRadius: 0,
+    measured: { ...MEASURED, yellow: MEASURED.red },
+  },
   // 7.3" 7-colour ACeP and Spectra 6.
   color73: {
     id: "color73",

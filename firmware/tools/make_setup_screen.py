@@ -1,7 +1,7 @@
 """
 Generates src/setup_screen_data.h: the screen shown in WiFi setup mode, per panel size
 (768x552, 400x300, 648x480 / 800x480 for the 5.83" and 7.5" (and the 7.3"), 600x448 for the
-5.65" and 640x384 for the 7.5" V1): a header, two numbered steps (the hotspot to join, in a
+5.65" and 5.83" V1 and 640x384 for the 7.5" V1): a header, two numbered steps (the hotspot to join, in a
 black pill; the address to open) and a footer with how long it lasts / how to restart.
 
 The static part is laid out here with the backend's pixel fonts (../server/assets/fonts)
@@ -143,7 +143,7 @@ def layout_480(W, m):
 
 
 def layout_448(W, m):
-    """5.65" (600x448): the 480 layout, 32 px shorter (the steps and footer moved up)."""
+    """5.65" and 5.83" V1 (600x448): the 480 layout, 32 px shorter (the steps and footer moved up)."""
     return design(W, 448, m, {
         "title": "lxgw-wenkai-28px.bdf.gz", "label": "lxgw-wenkai-24px.bdf.gz", "big": "inter-medium-48px.bdf.gz",
         "num": "barlow-condensed-bold-72px.bdf.gz", "hint": "lxgw-wenkai-20px.bdf.gz", "brand": "inter-medium-24px.bdf.gz",

@@ -63,7 +63,7 @@ void epdDisplay2bppPaged(const char *path);
 // 4bpp controllers: each 2bpp row is expanded to the panel's colour indices on the way.)
 #if (defined(EPD_PANEL_398_SE0398NZ07A0) || defined(EPD_PANEL_42_HINK_SSD1683) \
      || defined(EPD_PANEL_583_UC8179) || defined(EPD_PANEL_75_GDEY075Z08) \
-     || defined(EPD_PANEL_565_UC8159) || defined(EPD_PANEL_75_UC8159_BWR) \
+     || defined(EPD_PANEL_565_UC8159) || defined(EPD_PANEL_75_UC8159_BWR) || defined(EPD_PANEL_583_UC8159_BWR) \
      || defined(EPD_PANEL_73_ACEP) || defined(EPD_PANEL_73_SPECTRA6)) \
     && ((defined(EPD_BPP) && EPD_BPP >= 2) || defined(EPD_COLOR_PAGED))  // (colour builds)
 #define EPD_STREAMS_FRAMES 1

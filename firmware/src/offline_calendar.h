@@ -19,7 +19,7 @@
 // Every panel has the local calendar except the 2.9" (296x128: the server's layouts do
 // not fit it). Ink codes as the server's panel for it (server/src/panels.ts):
 //  - 4 colours (3.98", 4.2" B/W/Y/R, 5.65" / 7.3" colour): 2bpp, {0, 1, 2, 3}
-//  - 3 colours (4.2" HINK / WFT, 5.83" / 7.5" UC8179, 7.5" V1 UC8159): 2bpp, yellow shown red, {0, 1, 3, 3}
+//  - 3 colours (4.2" HINK / WFT, 5.83" / 7.5" UC8179, 7.5" / 5.83" V1 UC8159): 2bpp, yellow shown red, {0, 1, 3, 3}
 //  - B/W: 1 bit per pixel in imgBuf (as a downloaded BMP), red and yellow black
 // How it reaches the panel (offline_calendar.cpp showLocalCalendar):
 //  - panels that take frames row by row (EPD_STREAMS_FRAMES): drawn in bands of rows,

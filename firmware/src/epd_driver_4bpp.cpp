@@ -5,6 +5,9 @@
 //                             Good Display GDEP0565D90)
 //   EPD_PANEL_75_UC8159_BWR   7.5" B/W/R 640x384 (UC8159; Waveshare 7.5" B V1, GDEW075Z09)
 //   EPD_PANEL_75_UC8159_BW    7.5" B/W 640x384 (UC8159; Waveshare 7.5" V1, GDEW075T8)
+//   EPD_PANEL_583_UC8159_BWR  5.83" B/W/R 600x448 (UC8159; Waveshare 5.83" B V1, GDEW0583Z21)
+//   EPD_PANEL_583_UC8159_BW   5.83" B/W 600x448 (UC8159; Waveshare 5.83" V1, GDEW0583T7)
+//                             (the 648x480 5.83" V2 is a UC8179: epd_driver_uc8179.cpp)
 //   EPD_PANEL_73_ACEP         7.3" ACeP 7-colour 800x480 (Waveshare 7.3" F, GDEY073D46)
 //   EPD_PANEL_73_SPECTRA6     7.3" Spectra 6 800x480 (Waveshare 7.3" E, GDEP073E01)
 // Init sequences follow the Waveshare / GxEPD2 references. None of these has been
@@ -31,6 +34,14 @@
 #define EPD_GXEPD2_SPI_HZ 4000000
 #endif
 
+// The UC8159 B/W/R and B/W panels of the first generation (7.5" 640x384, 5.83" 600x448).
+#if defined(EPD_PANEL_75_UC8159_BWR) || defined(EPD_PANEL_583_UC8159_BWR)
+#define UC8159_V1_BWR
+#endif
+#if defined(UC8159_V1_BWR) || defined(EPD_PANEL_75_UC8159_BW) || defined(EPD_PANEL_583_UC8159_BW)
+#define UC8159_V1
+#endif
+
 // Panel colour index for each 2bpp code: black, white, yellow, red.
 #if defined(EPD_PANEL_565_UC8159) || defined(EPD_PANEL_73_ACEP)
 // ACeP: 0 black, 1 white, 2 green, 3 blue, 4 red, 5 yellow, 6 orange
@@ -42,8 +53,8 @@ static const uint8_t PIXEL_WHITE = 0x1;
 static const uint8_t CODE_TO_PIXEL[4] = {0x0, 0x1, 0x2, 0x3};
 static const uint8_t PIXEL_WHITE = 0x1;
 #define EPD_4BPP_NAME "Spectra6"
-#elif defined(EPD_PANEL_75_UC8159_BWR) || defined(EPD_PANEL_75_UC8159_BW)
-// UC8159 640x384: 0 black, 3 white, 4 red (the B/W panel ignores red)
+#elif defined(UC8159_V1)
+// UC8159 V1 panels: 0 black, 3 white, 4 red (the B/W panels ignore red)
 static const uint8_t CODE_TO_PIXEL[4] = {0x0, 0x3, 0x4, 0x4};
 static const uint8_t PIXEL_WHITE = 0x3;
 #define EPD_4BPP_NAME "UC8159"
@@ -155,10 +166,10 @@ static void controllerInit() {
     sendCommandData(0xE3, {0xAA});                    // PWS
     delay(100);
     sendCommandData(0x50, {0x37});
-#elif defined(EPD_PANEL_75_UC8159_BWR) || defined(EPD_PANEL_75_UC8159_BW)
-    // Waveshare epd7in5 / epd7in5b (V1), GxEPD2_750 / GxEPD2_750c
+#elif defined(UC8159_V1)
+    // Waveshare epd7in5 / epd7in5b / epd5in83 / epd5in83b (V1), GxEPD2_750 / _750c / _583 / _583c
 #ifndef UC8159_VCOM
-#if defined(EPD_PANEL_75_UC8159_BWR)
+#if defined(UC8159_V1_BWR)
 #define UC8159_VCOM 0x28
 #else
 #define UC8159_VCOM 0x1E

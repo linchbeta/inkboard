@@ -19,7 +19,7 @@ if (all) {
   panels.push(["bwry42", PANELS.bwry42, true], ["bwr583", PANELS.bwr583, true], ["bwr75", PANELS.bwr75, true],
     ["bw42", genericPanel(400, 300), false], ["bw583", genericPanel(648, 480), false], ["bw75", genericPanel(800, 480), false],
     ["color565", PANELS.color565, true], ["bwr75v1", PANELS.bwr75v1, true], ["color73", PANELS.color73, true],
-    ["bw75v1", genericPanel(640, 384), false]);
+    ["bw75v1", genericPanel(640, 384), false], ["bwr583v1", PANELS.bwr583v1, true], ["bw583v1", genericPanel(600, 448), false]);
 }
 
 /** A 1-bit BMP's pixels as the firmware keeps them (network.cpp): top row first, W/8 bytes a row. */
