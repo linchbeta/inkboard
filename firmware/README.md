@@ -53,8 +53,6 @@ ESP32 墨水屏的固件，在 InkSight 固件的基础上改的。它做的事�
 
 UC8176、JD79665、SSD1677 和 UC8159 V1 的初始化参数是从 [EPD-nRF5](https://github.com/tsl0922/EPD-nRF5) 移植的（离线日历也出自这个项目，同样是 GPL-3.0）；9.7 寸价签屏的寄存器值来自 [atc1441/Tag_FW_nRF52811](https://github.com/atc1441/Tag_FW_nRF52811)。这些面板是参照 [MiaooAim](https://github.com/bluseliu50/MiaooAim_fork) 支持的屏挑的，代码按这里的驱动结构重写，没有直接搬它的文件。
 
-5.83 寸 UC8179 三色屏（648×480）的数据间隔设置和红色极性改成了微雪 5.83inch B V2 例程的值（MIT 许可，MiaooAim 在这块屏上实测用的也是它）：CDI 0x11 0x07，红色层 1 = 红。以前的设置（CDI 0x77、0 = 红）可以在编译参数里加 `-DEPD_COLOR_ACTIVE_LOW` 换回来。
-
 微雪 4.2inch B V2 有两种控制器：新版和 HINK 一样是 SSD1683 类（用 `epd_42_hink_ssd1683_*`），旧版是 UC8176（用 `epd_42_uc8176_bwr_*`）。JD79665 的屏直接收后端的 2bpp 数据，不用换算；SSD1677 的 HD 屏分辨率大，C3 上黑白版光黑白缓冲就要 58 KB，内存比 7.5 寸紧一些。
 
 逐行写入的好处是下载画面时不用留整帧的内存，走 HTTPS 时余量最足（一条 HTTPS 连接本身就要 45 到 50 KB）。颜色由后端按面板换算好：三色屏上黄色显示成红色，黑白屏上红和黄都显示成黑色。

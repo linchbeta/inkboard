@@ -7,9 +7,7 @@
 //                             GDEW042Z15): same planes; init as EPD-nRF5 (UC81xx.c)
 // Resolution comes from W/H macros (EPD_WIDTH/EPD_HEIGHT in build flags).
 // Color polarity: default active-low (UC8179 spec). Add -DEPD_COLOR_ACTIVE_HIGH
-// to build_flags if your panel wiring is inverted. The 5.83" takes the settings of the
-// Waveshare 5.83" B V2 sample (MIT; also what MiaooAim runs on that panel): CDI 0x11 0x07
-// and the colour plane active-high (-DEPD_COLOR_ACTIVE_LOW for the old ones).
+// to build_flags if your panel wiring is inverted.
 
 #include "epd_driver.h"
 #include "config.h"
@@ -23,10 +21,6 @@
 #endif
 
 static bool uc8179_initialized = false;
-
-#if defined(EPD_PANEL_583_UC8179) && !defined(EPD_COLOR_ACTIVE_LOW) && !defined(EPD_COLOR_ACTIVE_HIGH)
-#define EPD_COLOR_ACTIVE_HIGH
-#endif
 
 // ── Color plane polarity ─────────────────────────────────────────────
 // UC8179 DTM2 (0x13) is active-low: 0 = colored, 1 = no color.
@@ -162,9 +156,6 @@ static void uc8179InitController() {
     epdSendCommand(0x50);  // CDI: border & data interval
 #if defined(EPD_PANEL_75_GDEY075Z08)
     epdSendData(0x57);  // GDEY075Z08 reference value (white border, correct polarity)
-#elif defined(EPD_PANEL_583_UC8179) && defined(EPD_COLOR_ACTIVE_HIGH)
-    epdSendData(0x11);  // Waveshare 5.83" B V2
-    epdSendData(0x07);
 #else
     epdSendData(0x77);  // default for 5.83" and others
 #endif
