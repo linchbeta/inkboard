@@ -195,6 +195,12 @@ test("poems: every character in every WenKai size; every poem fits whole on both
       assert.deepEqual(missing, [], `${fam} ${px}px`);
     }
   }
+  // the byline ("唐 · 杜甫") and the seal are set in the small bitmap fonts
+  const { refFonts } = await import("../src/render/reftext.js");
+  for (const [name, f] of Object.entries(refFonts()).filter(([n]) => n === "wqy12" || n === "wqy9")) {
+    const names = new Set(POEMS.flatMap((p) => [...(p.dynasty + p.author + p.title)]));
+    assert.deepEqual([...names].filter((ch) => ch !== "·" && !f.f.glyphs.has(ch.codePointAt(0)!)), [], name);
+  }
   for (const p of POEMS) {
     // the same bounds renderPoetry uses: 3.98" 768x552 (header 49, pad 28), 4.2" 400x300 (header 31, pad 6)
     assert.ok(plan(p, true, 768 - 40 - 56, 552 - 49 - 56).fits, `3.98 ${p.title}`);

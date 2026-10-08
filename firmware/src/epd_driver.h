@@ -59,9 +59,14 @@ void epdDisplay2bppPaged(const char *path);
 
 // Panels whose driver takes a frame row by row into the controller's own memory: frames
 // are streamed from the network, without a frame buffer. (UC8179: the black plane goes to
-// the controller as it arrives, the colour plane waits in RAM -- half the 2bpp frame.)
+// the controller as it arrives, the colour plane waits in RAM -- half the 2bpp frame.
+// 4bpp controllers: each 2bpp row is expanded to the panel's colour indices on the way.)
 #if (defined(EPD_PANEL_398_SE0398NZ07A0) || defined(EPD_PANEL_42_HINK_SSD1683) \
-     || defined(EPD_PANEL_583_UC8179) || defined(EPD_PANEL_75_GDEY075Z08)) \
+     || defined(EPD_PANEL_583_UC8179) || defined(EPD_PANEL_75_GDEY075Z08) \
+     || defined(EPD_PANEL_565_UC8159) || defined(EPD_PANEL_75_UC8159_BWR) || defined(EPD_PANEL_583_UC8159_BWR) \
+     || defined(EPD_PANEL_73_ACEP) || defined(EPD_PANEL_73_SPECTRA6) || defined(EPD_PANEL_42_UC8176_BWR) \
+     || defined(EPD_PANEL_75_JD79665) || defined(EPD_PANEL_583_JD79665) || defined(EPD_PANEL_75HD_SSD1677_BWR) \
+     || defined(EPD_PANEL_97_SSD_BWR)) \
     && ((defined(EPD_BPP) && EPD_BPP >= 2) || defined(EPD_COLOR_PAGED))  // (colour builds)
 #define EPD_STREAMS_FRAMES 1
 // Row-streaming frame API: a caller only needs one 2bpp row (W/4 bytes) at a time.

@@ -13,20 +13,20 @@ ESP32 墨水屏的固件，在 InkSight 固件的基础上改的。它做的事�
 | 3.98 寸 SE0398NZ07 A0，768×552，黑白黄红 | `epd_398_se0398nz07a0_c3_promini` |
 | 4.2 寸 HINK SSD1683，400×300，黑白红 | `epd_42_hink_ssd1683_c3_promini` |
 
-3.98 寸还有一个 A1 版（驱动芯片是 JD79661，排线上印着 A1），对应 `epd_398_se0398nz07a1_c3_promini`。驱动按参考资料写好了，但我手上没有 A1 的屏，没测过。
+3.98 寸还有一个 A1 版（驱动芯片是 JD79661，排线上印着 A1），对应 `epd_398_se0398nz07a1_c3_promini`，也实测过。
 
 每个环境还有几个变体：`_led5` 是给 LED 接在 GPIO5 上的旧板子用的（新板子的 LED 在 GPIO3）；`_test` 每分钟醒一次，配合 `tools/mock_server.py` 测功能；`_selftest` 不联网，直接显示一张 1 像素线条、小字和四色色块的测试图，用来看屏幕本身的显示效果。
 
 ## 支持的屏幕
 
-上游支持的面板和开发板都在 `boards/other_panels.ini` 里，C3 的环境都带 `_led5` 变体。`_yd_s3_n16r8` 是 YD-ESP32-S3 N16R8 开发板（引脚见 `src/config.h`，串口日志走板上的 USB 转串口口），还没在真机上试过。除了 2.9 寸，每种屏都能显示后端的画面，也都有离线日历，日历和服务器画的一个像素都不差（用 `tools/calendar_test` 对比过）。
+上游支持的面板、后来加的面板和开发板都在 `boards/other_panels.ini` 里，C3 的环境都带 `_led5` 变体。`_yd_s3_n16r8` 是 YD-ESP32-S3 N16R8 开发板（引脚见 `src/config.h`，串口日志走板上的 USB 转串口口），还没在真机上试过。除了 2.9 寸，每种屏都能显示后端的画面，也都有离线日历，日历和服务器画的一个像素都不差（用 `tools/calendar_test` 对比过）。
 
 | 屏幕 | 颜色 | 编译环境 | 画面怎么写进屏幕 | 实测 |
 |---|---|---|---|---|
 | 3.98 寸 SE0398NZ07 A0 | 黑白黄红 | `epd_398_se0398nz07a0_c3_promini`、`_wroom32e`、`_yd_s3_n16r8` | 收一行写一行，不占整帧内存 | 是 |
-| 3.98 寸 SE0398NZ07 A1 | 黑白黄红 | `epd_398_se0398nz07a1_c3_promini`、`_yd_s3_n16r8` | 同上 | 否 |
+| 3.98 寸 SE0398NZ07 A1 | 黑白黄红 | `epd_398_se0398nz07a1_c3_promini`、`_yd_s3_n16r8` | 同上 | 是（C3 promini） |
 | 4.2 寸 HINK SSD1683 | 黑白红 | `epd_42_hink_ssd1683_c3_promini`、`_wroom32e`、`_yd_s3_n16r8` | 收一行写一行 | 是 |
-| 5.83 寸 UC8179（微雪 V2） | 黑白红 | `epd_583_uc8179_bwr_c3_promini`、`_bwr_wroom32e` | 黑白部分逐行写，红色部分先放内存（39 KB） | 否 |
+| 5.83 寸 UC8179（微雪 V2） | 黑白红 | `epd_583_uc8179_bwr_c3_promini`、`_bwr_wroom32e` | 黑白部分逐行写，红色部分先放内存（39 KB） | 是（WROOM-32E） |
 | 7.5 寸 GDEY075Z08 | 黑白红 | `epd_75_uc8179_c3_promini`、`_wroom32e` | 同上，红色部分 48 KB | 否 |
 | 4.2 寸 GDEM042F52 | 黑白黄红 | `epd_42_gdem042f52_jd79668_c3_promini`、`_c3_std`、`_wroom32e` | 整帧放内存，30 KB | 否 |
 | 4.2 寸 DKE DEPG0420RY683 | 黑白黄红 | `epd_42_depg0420ry683_ssd1683_c3_promini` | 整帧放内存，30 KB | 否 |
@@ -34,7 +34,30 @@ ESP32 墨水屏的固件，在 InkSight 固件的基础上改的。它做的事�
 | 4.2 寸黑白屏 | 黑白 | 微雪 V2（`epd_42_wsv2_ssd1683_*`）、中景园（`epd_42_zhongjingyuan_bw_*`）、GDEY042T81 / GDEW042T2 / GDEW042M01（`epd_42_gxepd2_*`）、WFT0420CZ15 黑白（`epd_42_wft0cz15_bw_*`） | 用固件本来就有的 15 KB 黑白缓冲 | 否 |
 | 5.83 寸黑白屏 | 黑白 | `epd_583_c3_promini`、`epd_583_wroom32e`，以及把 UC8179 三色屏当黑白用的 `epd_583_uc8179_*` | 38 KB 黑白缓冲 | 否 |
 | 7.5 寸黑白屏 | 黑白 | `epd_75_c3_promini`、`epd_75_wroom32e` | 48 KB 黑白缓冲 | 否 |
+| 5.65 寸七色 ACeP（UC8159C，微雪 5.65inch F、GDEP0565D90） | 黑白黄红（七色里的四种） | `epd_565_uc8159_c3_promini`、`_wroom32e` | 收一行写一行，不占整帧内存 | 否 |
+| 7.3 寸七色 ACeP（微雪 7.3inch F、GDEY073D46） | 黑白黄红（七色里的四种） | `epd_73_acep_c3_promini`、`_wroom32e` | 同上 | 否 |
+| 7.3 寸六色 Spectra 6（微雪 7.3inch E、GDEP073E01） | 黑白黄红（六色里的四种） | `epd_73_spectra6_c3_promini`、`_wroom32e` | 同上 | 否 |
+| 7.5 寸 V1 三色（UC8159，640×384，微雪 7.5inch B V1、GDEW075Z09） | 黑白红 | `epd_75_uc8159_bwr_c3_promini`、`_wroom32e` | 同上 | 否 |
+| 7.5 寸 V1 黑白（UC8159，640×384，微雪 7.5inch V1、GDEW075T8） | 黑白 | `epd_75_uc8159_bw_c3_promini`、`_wroom32e` | 30 KB 黑白缓冲 | 否 |
+| 5.83 寸 V1 三色（UC8159，600×448，微雪 5.83inch B V1、GDEW0583Z21） | 黑白红 | `epd_583_uc8159_bwr_c3_promini`、`_wroom32e` | 收一行写一行 | 否 |
+| 5.83 寸 V1 黑白（UC8159，600×448，微雪 5.83inch V1、GDEW0583T7） | 黑白 | `epd_583_uc8159_bw_c3_promini`、`_wroom32e` | 33 KB 黑白缓冲 | 否 |
+| 4.2 寸 UC8176（微雪 4.2inch B V1、GDEW042Z15） | 黑白红 | `epd_42_uc8176_bwr_c3_promini`、`_wroom32e` | 黑白部分逐行写，红色部分先放内存（15 KB） | 否 |
+| 7.5 寸 JD79665（GDEM075F52） | 黑白黄红 | `epd_75_jd79665_c3_promini`、`_wroom32e` | 收一行写一行 | 否 |
+| 5.83 寸 JD79665（648×480） | 黑白黄红 | `epd_583_jd79665_c3_promini`、`_wroom32e` | 收一行写一行 | 否 |
+| 7.5 寸 HD SSD1677（880×528，微雪 7.5inch HD B、GDEH075Z90） | 黑白红 | `epd_75hd_ssd1677_bwr_c3_promini`、`_wroom32e` | 收一行写一行 | 否 |
+| 7.5 寸 HD SSD1677 黑白（880×528） | 黑白 | `epd_75hd_ssd1677_bw_c3_promini`、`_wroom32e` | 58 KB 黑白缓冲 | 否 |
+| 9.7 寸三色电子价签屏（Solum，960×672） | 黑白红 | `epd_97_ssd_bwr_c3_promini`、`_wroom32e`、`_yd_s3_n16r8` | 收一行写一行；但 imgBuf 要 80 KB，建议用 S3 | 否 |
+| GxEPD2 的其它黑白屏：3.97 寸 GDEM0397T81、4.26 寸 GDEQ0426T82、4.2 寸 SE0420NQ04、5.83 寸 GDEW0583T8、7.5 寸 GDEY075T7（800×480 等） | 黑白 | `epd_397_gdem0397t81_*`、`epd_426_gdeq0426t82_*`、`epd_42_se0420nq04_*`、`epd_583_gdew0583t8_*`、`epd_75_gdey075t7_*`（`_c3_promini`、`_wroom32e`） | 黑白缓冲（15–48 KB），驱动是 GxEPD2 库 | 否 |
+| GxEPD2 的大尺寸黑白屏：5.76 寸 GDEH0576T81（920×680，没有局刷）、10.2 寸 GDEM102T91、11.6 寸 GDEH116T91（960×640）、13.3 寸 GDEM133T91（960×680） | 黑白 | `epd_576_gdeh0576t81_*`、`epd_102_gdem102t91_*`、`epd_116_gdeh116t91_*`、`epd_133_gdem133t91_*`（另有 `_yd_s3_n16r8`） | 黑白缓冲 75–80 KB，建议用 S3 | 否 |
 | 2.9 寸 | 黑白 | `epd_29_c3_promini`、`_wroom32e` | 没有适配：后端的版面放不下，也没有离线日历 | — |
+
+5.65 寸七色屏和 7.5 寸、5.83 寸 V1 的驱动是 `src/epd_driver_uc8159.cpp`（芯片都是 UC8159）；7.3 寸七色和六色屏是 `src/epd_driver_73_color.cpp`，屏厂没公开这两块屏的驱动芯片型号，初始化命令和 3.98 寸 A1 的 JD79661 几乎一样。这些屏的控制器每个像素存 4 位，整帧按顺序写进去，所以收到一行 2bpp 就换算成屏幕自己的颜色编号直接写，不用整帧内存。七色和六色屏目前只用其中的黑白黄红四种（后端的画面就是这四种颜色），照片也按这四种颜色抖动。注意 5.83 寸分两代：V1 是 600×448 的 UC8159，V2（背面贴着 V2）是 648×480 的 UC8179，用上面的 `epd_583_uc8179_*`。V1 三色屏如果灰蒙蒙或者对比度不对，可以在编译参数里加 `-DUC8159_VCOM=0x..` 调 VCOM（默认 0x28）。
+
+UC8176、JD79665、SSD1677 和 UC8159 V1 的初始化参数是从 [EPD-nRF5](https://github.com/tsl0922/EPD-nRF5) 移植的（离线日历也出自这个项目，同样是 GPL-3.0）；9.7 寸价签屏的寄存器值来自 [atc1441/Tag_FW_nRF52811](https://github.com/atc1441/Tag_FW_nRF52811)。这些面板是参照 [MiaooAim](https://github.com/bluseliu50/MiaooAim_fork) 支持的屏挑的，代码按这里的驱动结构重写，没有直接搬它的文件。
+
+黑白屏除了上面这些，[GxEPD2](https://github.com/ZinggJM/GxEPD2) 库（固件本来就用它，GPL-3.0）里横版、尺寸放得下版面的黑白屏也都接上了，在 `src/epd_driver.cpp` 里一屏一行。要再加 GxEPD2 的黑白屏，照着那几行加一个宏和编译环境就行，屏的原生分辨率要和 `EPD_WIDTH`/`EPD_HEIGHT` 一致（编译时会检查）。
+
+微雪 4.2inch B V2 有两种控制器：新版和 HINK 一样是 SSD1683 类（用 `epd_42_hink_ssd1683_*`），旧版是 UC8176（用 `epd_42_uc8176_bwr_*`）。JD79665 的屏直接收后端的 2bpp 数据，不用换算；SSD1677 的 HD 屏分辨率大，C3 上黑白版光黑白缓冲就要 58 KB，内存比 7.5 寸紧一些。
 
 逐行写入的好处是下载画面时不用留整帧的内存，走 HTTPS 时余量最足（一条 HTTPS 连接本身就要 45 到 50 KB）。颜色由后端按面板换算好：三色屏上黄色显示成红色，黑白屏上红和黄都显示成黑色。
 
@@ -109,7 +132,7 @@ LED 常亮表示在配网模式，等手机连热点 `InkBoard-XXXX`；慢闪是
 | `src/main.cpp` | 启动流程、状态机、按键、深度睡眠 |
 | `src/network.cpp` | WiFi 和跟后端打交道：注册、心跳、取画面 |
 | `src/portal.cpp`、`data/portal_html.h` | 配网热点和网页 |
-| `src/display.cpp`、`src/epd_driver*.cpp` | 显示和各种屏的驱动。3.98 寸（A0 和 A1）、4.2 寸 HINK、UC8179 各有单独的文件，其它上游的屏在 `epd_driver.cpp` 里 |
+| `src/display.cpp`、`src/epd_driver*.cpp` | 显示和各种屏的驱动。3.98 寸（A0 和 A1）、4.2 寸 HINK、UC8179、UC8159、7.3 寸彩色屏、JD79665、SSD1677 各有单独的文件（UC8176 三色和 UC8179 共用一个），其它上游的屏在 `epd_driver.cpp` 里 |
 | `src/storage.cpp` | 存 WiFi、服务器地址和配对码 |
 | `src/offline_calendar.cpp` | 时钟、离线日历、只当日历用、留言缓存、节假日更新 |
 | `src/calendar_render.cpp`、`src/calendar_data.h` | 本地月历，是服务器日历的 C++ 移植版，以及它要用的数据 |

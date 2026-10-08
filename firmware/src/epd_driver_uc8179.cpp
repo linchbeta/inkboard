@@ -3,6 +3,8 @@
 // Supported panels (via EPD_CONTROLLER_UC8179 in config.h):
 //   EPD_PANEL_583_UC8179  — Waveshare 5.83" V2 BWR  648×480
 //   EPD_PANEL_75_GDEY075Z08 — Good Display 7.5" BWR 800×480
+//   EPD_PANEL_42_UC8176_BWR — 4.2" BWR 400×300 on the UC8176 (Waveshare 4.2" B V1,
+//                             GDEW042Z15): same planes; init as EPD-nRF5 (UC81xx.c)
 // Resolution comes from W/H macros (EPD_WIDTH/EPD_HEIGHT in build flags).
 // Color polarity: default active-low (UC8179 spec). Add -DEPD_COLOR_ACTIVE_HIGH
 // to build_flags if your panel wiring is inverted.
@@ -117,6 +119,21 @@ static void uc8179InitController() {
     SPI.begin(PIN_EPD_SCK, -1, PIN_EPD_MOSI, PIN_EPD_CS);
 
     epdReset();
+
+#if defined(EPD_PANEL_42_UC8176_BWR)
+    // UC8176: power and booster from its OTP; panel setting, border and resolution only
+    epdSendCommand(0x00);  // PSR: B/W/R, LUT from OTP
+    epdSendData(0x0F);
+    epdSendCommand(0x50);  // CDI
+    epdSendData(0x77);
+    epdSendCommand(0x61);  // TRES
+    epdSendData(W >> 8);
+    epdSendData(W & 0xFF);
+    epdSendData(H >> 8);
+    epdSendData(H & 0xFF);
+    uc8179_initialized = true;
+    return;
+#endif
 
     epdSendCommand(0x01);  // PWRSET
     epdSendData(0x07);

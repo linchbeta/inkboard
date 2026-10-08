@@ -1,4 +1,6 @@
-// Subset BDF fonts to ASCII + GB2312 (+ a few extras) so the repo stays small.
+// Subset BDF fonts to ASCII + GB2312 (+ a few extras, and the poems' characters) so the
+// repo stays small. (The WenQuanYi sources: the BDF release, or the PCF files of Debian's
+// xfonts-wqy 1.0.0~rc1 through pcf2bdf -- the same glyphs.)
 // Usage:  npm run fonts:subset -- <source dir>
 // Source dir may contain (any subset of):
 //   fusion-pixel-{10,12}px-proportional-zh_hans.bdf   (Fusion Pixel, OFL)
@@ -26,6 +28,10 @@ function charset(): Set<number> {
     }
   }
   for (const ch of "℃°·—…「」『』【】〔〕・♀♂★☆○●◎◇◆□■△▲※→←↑↓〒々〆〇") set.add(ch.codePointAt(0)!);
+  // the poems' characters: their poets' names and titles are set in these fonts too, and
+  // some are outside GB2312 (as in make-fonts.py)
+  const poems = readFileSync(join(import.meta.dirname, "..", "src", "data", "poems.ts"), "utf8");
+  for (const ch of poems) if (ch.codePointAt(0)! > 0x2e7f) set.add(ch.codePointAt(0)!);
   set.add(0xfffe); // font's DEFAULT_CHAR
   return set;
 }

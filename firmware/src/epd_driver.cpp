@@ -1,7 +1,8 @@
 #include "epd_driver.h"
 #include "config.h"
 
-#if !defined(EPD_CONTROLLER_UC8179) && !defined(EPD_PANEL_398_SE0398NZ07A0) && !defined(EPD_PANEL_42_HINK_SSD1683)
+#if !defined(EPD_CONTROLLER_UC8179) && !defined(EPD_PANEL_398_SE0398NZ07A0) && !defined(EPD_PANEL_42_HINK_SSD1683) \
+    && !defined(EPD_CONTROLLER_UC8159) && !defined(EPD_CONTROLLER_73_COLOR) && !defined(EPD_CONTROLLER_JD79665) && !defined(EPD_CONTROLLER_SSD1677)
 
 #if defined(EPD_PANEL_42_SSD1683_BW) || defined(EPD_PANEL_42_DKE_RY683) || defined(EPD_PANEL_42_GDEM042F52)
 
@@ -847,8 +848,44 @@ void epdSleep() {
   #include <epd/GxEPD2_750_T7.h>
   GxEPD2_BW<GxEPD2_750_T7, GxEPD2_750_T7::HEIGHT / 4> display(
       GxEPD2_750_T7(PIN_EPD_CS, PIN_EPD_DC, PIN_EPD_RST, PIN_EPD_BUSY));
+// ── More B/W panels of GxEPD2, landscape as the library has them ──
+// Frames are written whole from imgBuf (writeImage), so the library's own page buffer is
+// never drawn into: 8 rows are enough.
+#else
+#define GXEPD2_BW_PANEL(cls)                                                              \
+  GxEPD2_BW<cls, 8> display(cls(PIN_EPD_CS, PIN_EPD_DC, PIN_EPD_RST, PIN_EPD_BUSY));    \
+  static_assert(cls::WIDTH == EPD_WIDTH && cls::HEIGHT == EPD_HEIGHT,                    \
+                #cls ": EPD_WIDTH / EPD_HEIGHT must be the panel's own size")
+#if defined(EPD_PANEL_397_GDEM0397T81)        // 3.97" 800x480, SSD1677
+  #include <gdem/GxEPD2_397_GDEM0397T81.h>
+  GXEPD2_BW_PANEL(GxEPD2_397_GDEM0397T81);
+#elif defined(EPD_PANEL_426_GDEQ0426T82)      // 4.26" 800x480, SSD1677
+  #include <gdeq/GxEPD2_426_GDEQ0426T82.h>
+  GXEPD2_BW_PANEL(GxEPD2_426_GDEQ0426T82);
+#elif defined(EPD_PANEL_42_SE0420NQ04)        // 4.2" 400x300, UC8276C
+  #include <other/GxEPD2_420_SE0420NQ04.h>
+  GXEPD2_BW_PANEL(GxEPD2_420_SE0420NQ04);
+#elif defined(EPD_PANEL_583_GDEW0583T8)       // 5.83" 648x480, GD7965
+  #include <epd/GxEPD2_583_T8.h>
+  GXEPD2_BW_PANEL(GxEPD2_583_T8);
+#elif defined(EPD_PANEL_576_GDEH0576T81)      // 5.76" 920x680, SSD2677
+  #include <gdeh/GxEPD2_576_GDEH0576T81.h>
+  GXEPD2_BW_PANEL(GxEPD2_576_GDEH0576T81);
+#elif defined(EPD_PANEL_75_GDEY075T7)         // 7.5" 800x480, UC8179
+  #include <gdey/GxEPD2_750_GDEY075T7.h>
+  GXEPD2_BW_PANEL(GxEPD2_750_GDEY075T7);
+#elif defined(EPD_PANEL_102_GDEM102T91)       // 10.2" 960x640, SSD1677
+  #include <gdem/GxEPD2_1020_GDEM102T91.h>
+  GXEPD2_BW_PANEL(GxEPD2_1020_GDEM102T91);
+#elif defined(EPD_PANEL_116_GDEH116T91)       // 11.6" 960x640, SSD1677
+  #include <epd/GxEPD2_1160_T91.h>
+  GXEPD2_BW_PANEL(GxEPD2_1160_T91);
+#elif defined(EPD_PANEL_133_GDEM133T91)       // 13.3" 960x680, SSD1677
+  #include <gdem/GxEPD2_1330_GDEM133T91.h>
+  GXEPD2_BW_PANEL(GxEPD2_1330_GDEM133T91);
 #else
   #error "No EPD panel type defined. Use -DEPD_PANEL_42_SSD1683_BW, -DEPD_PANEL_42_DKE_RY683, -DEPD_PANEL_42_GDEM042F52, -DEPD_PANEL_42_GXEPD2_T81, -DEPD_PANEL_42_GXEPD2_GYE042A87, -DEPD_PANEL_42_GXEPD2_420, -DEPD_PANEL_42_GXEPD2_M01, -DEPD_PANEL_29, -DEPD_PANEL_583_UC8179, -DEPD_PANEL_583, -DEPD_PANEL_75, or use -DEPD_CONTROLLER_UC8179 for UC8179 panels"
+#endif
 #endif
 
 static bool _initialized = false;
@@ -909,6 +946,10 @@ void epdDisplay(const uint8_t *image) {
 }
 
 void epdDisplayFast(const uint8_t *image) {
+    if (!display.epd2.hasFastPartialUpdate) {  // (e.g. the 5.76" GDEH0576T81)
+        epdDisplay(image);
+        return;
+    }
 #if defined(EPD_PANEL_583_UC8179)
     // 583 UC8179: always full refresh (GxEPD2 refresh(false)); avoids partial LUT ghosting.
     epdDisplay(image);
@@ -963,11 +1004,18 @@ bool epdSupportsPartialRefresh() {
 #if defined(EPD_PANEL_29)
     return false;
 #else
-    return true;
+    return display.epd2.hasFastPartialUpdate;
 #endif
 }
 
 void epdPartialDisplayWithOld(uint8_t *data, const uint8_t *oldData, int xStart, int yStart, int xEnd, int yEnd) {
+#if !defined(EPD_PANEL_29)
+    if (!display.epd2.hasFastPartialUpdate) {  // no partial refresh: the whole screen (imgBuf)
+        (void)data; (void)oldData; (void)xStart; (void)yStart; (void)xEnd; (void)yEnd;
+        epdDisplay(imgBuf);
+        return;
+    }
+#endif
     epdInit();
 #if defined(EPD_PANEL_29)
     (void)data;
@@ -1012,4 +1060,4 @@ void epdSleep() {
 }
 #endif // EPD_PANEL_42_SSD1683_BW
 
-#endif  // !EPD_CONTROLLER_UC8179 && !EPD_PANEL_398_SE0398NZ07A0 && !EPD_PANEL_42_HINK_SSD1683
+#endif  // !EPD_CONTROLLER_UC8179 && !EPD_PANEL_398_SE0398NZ07A0 && !EPD_PANEL_42_HINK_SSD1683 && !EPD_CONTROLLER_UC8159 && !EPD_CONTROLLER_73_COLOR && !EPD_CONTROLLER_JD79665 && !EPD_CONTROLLER_SSD1677
