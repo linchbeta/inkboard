@@ -104,8 +104,8 @@ export const PANELS: Record<string, Panel> = {
     cornerRadius: 0,
     measured: { ...MEASURED, yellow: MEASURED.red },
   },
-  // Panels of the 4 bit/pixel, JD79665 and SSD1677 drivers (firmware/src/epd_driver_4bpp.cpp,
-  // _jd79665.cpp, _ssd1677.cpp), not yet checked on hardware. The 7-colour and Spectra 6 panels show black, white, yellow and red of their
+  // Panels of the UC8159, 7.3" colour, JD79665 and SSD1677 drivers (firmware/src/
+  // epd_driver_uc8159.cpp, _73_color.cpp, _jd79665.cpp, _ssd1677.cpp), not yet checked on hardware. The 7-colour and Spectra 6 panels show black, white, yellow and red of their
   // colours; the firmware turns the 2bpp codes into the panel's own colour indices.
   // 5.65" 7-colour ACeP (UC8159C).
   color565: {

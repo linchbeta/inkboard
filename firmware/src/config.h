@@ -124,12 +124,16 @@ static const int COLOR_BUF_LEN = (W * H) / 4;  // 2bpp: 4 pixels per byte
 #define EPD_CONTROLLER_UC8179
 #endif
 
-// ── 4 bit/pixel controllers (epd_driver_4bpp.cpp) ────────────
-// UC8159 (5.65" 7-colour, 7.5" 640x384 and 5.83" 600x448 B/W/R and B/W) and the 7.3" 7-colour / Spectra 6.
+// ── UC8159 (epd_driver_uc8159.cpp) ───────────────────────────
+// 5.65" 7-colour, 7.5" 640x384 and 5.83" 600x448 B/W/R and B/W.
 #if defined(EPD_PANEL_565_UC8159) || defined(EPD_PANEL_75_UC8159_BWR) || defined(EPD_PANEL_75_UC8159_BW) \
-    || defined(EPD_PANEL_583_UC8159_BWR) || defined(EPD_PANEL_583_UC8159_BW) \
-    || defined(EPD_PANEL_73_ACEP) || defined(EPD_PANEL_73_SPECTRA6)
-#define EPD_CONTROLLER_4BPP
+    || defined(EPD_PANEL_583_UC8159_BWR) || defined(EPD_PANEL_583_UC8159_BW)
+#define EPD_CONTROLLER_UC8159
+#endif
+
+// ── 7.3" 7-colour / Spectra 6 (epd_driver_73_color.cpp) ──────
+#if defined(EPD_PANEL_73_ACEP) || defined(EPD_PANEL_73_SPECTRA6)
+#define EPD_CONTROLLER_73_COLOR
 #endif
 
 // ── JD79665 (epd_driver_jd79665.cpp) and SSD1677 (epd_driver_ssd1677.cpp) ──

@@ -49,7 +49,7 @@ ESP32 墨水屏的固件，在 InkSight 固件的基础上改的。它做的事�
 | 9.7 寸三色电子价签屏（Solum，960×672） | 黑白红 | `epd_97_ssd_bwr_c3_promini`、`_wroom32e`、`_yd_s3_n16r8` | 收一行写一行；但 imgBuf 要 80 KB，建议用 S3 | 否 |
 | 2.9 寸 | 黑白 | `epd_29_c3_promini`、`_wroom32e` | 没有适配：后端的版面放不下，也没有离线日历 | — |
 
-5.65 寸、7.3 寸彩色屏和 7.5 寸、5.83 寸 V1 的驱动在 `src/epd_driver_4bpp.cpp`。这些屏的控制器每个像素存 4 位，整帧按顺序写进去，所以收到一行 2bpp 就换算成屏幕自己的颜色编号直接写，不用整帧内存。七色和六色屏目前只用其中的黑白黄红四种（后端的画面就是这四种颜色），照片也按这四种颜色抖动。注意 5.83 寸分两代：V1 是 600×448 的 UC8159，V2（背面贴着 V2）是 648×480 的 UC8179，用上面的 `epd_583_uc8179_*`。V1 三色屏如果灰蒙蒙或者对比度不对，可以在编译参数里加 `-DUC8159_VCOM=0x..` 调 VCOM（默认 0x28）。
+5.65 寸七色屏和 7.5 寸、5.83 寸 V1 的驱动是 `src/epd_driver_uc8159.cpp`（芯片都是 UC8159）；7.3 寸七色和六色屏是 `src/epd_driver_73_color.cpp`，屏厂没公开这两块屏的驱动芯片型号，初始化命令和 3.98 寸 A1 的 JD79661 几乎一样。这些屏的控制器每个像素存 4 位，整帧按顺序写进去，所以收到一行 2bpp 就换算成屏幕自己的颜色编号直接写，不用整帧内存。七色和六色屏目前只用其中的黑白黄红四种（后端的画面就是这四种颜色），照片也按这四种颜色抖动。注意 5.83 寸分两代：V1 是 600×448 的 UC8159，V2（背面贴着 V2）是 648×480 的 UC8179，用上面的 `epd_583_uc8179_*`。V1 三色屏如果灰蒙蒙或者对比度不对，可以在编译参数里加 `-DUC8159_VCOM=0x..` 调 VCOM（默认 0x28）。
 
 UC8176、JD79665、SSD1677 和 UC8159 V1 的初始化参数是从 [EPD-nRF5](https://github.com/tsl0922/EPD-nRF5) 移植的（离线日历也出自这个项目，同样是 GPL-3.0）；9.7 寸价签屏的寄存器值来自 [atc1441/Tag_FW_nRF52811](https://github.com/atc1441/Tag_FW_nRF52811)。这些面板是参照 [MiaooAim](https://github.com/bluseliu50/MiaooAim_fork) 支持的屏挑的，代码按这里的驱动结构重写，没有直接搬它的文件。
 
@@ -128,7 +128,7 @@ LED 常亮表示在配网模式，等手机连热点 `InkBoard-XXXX`；慢闪是
 | `src/main.cpp` | 启动流程、状态机、按键、深度睡眠 |
 | `src/network.cpp` | WiFi 和跟后端打交道：注册、心跳、取画面 |
 | `src/portal.cpp`、`data/portal_html.h` | 配网热点和网页 |
-| `src/display.cpp`、`src/epd_driver*.cpp` | 显示和各种屏的驱动。3.98 寸（A0 和 A1）、4.2 寸 HINK、UC8179、每像素 4 位的屏（UC8159、7.3 寸彩色）、JD79665、SSD1677 各有单独的文件（UC8176 三色和 UC8179 共用一个），其它上游的屏在 `epd_driver.cpp` 里 |
+| `src/display.cpp`、`src/epd_driver*.cpp` | 显示和各种屏的驱动。3.98 寸（A0 和 A1）、4.2 寸 HINK、UC8179、UC8159、7.3 寸彩色屏、JD79665、SSD1677 各有单独的文件（UC8176 三色和 UC8179 共用一个），其它上游的屏在 `epd_driver.cpp` 里 |
 | `src/storage.cpp` | 存 WiFi、服务器地址和配对码 |
 | `src/offline_calendar.cpp` | 时钟、离线日历、只当日历用、留言缓存、节假日更新 |
 | `src/calendar_render.cpp`、`src/calendar_data.h` | 本地月历，是服务器日历的 C++ 移植版，以及它要用的数据 |
