@@ -14,6 +14,7 @@ test("panels: a device's report picks the panel with its colours; B/W ones get n
   assert.equal(matchPanel(648, 480, 4)?.id, "bwry583");
   assert.equal(matchPanel(880, 528, 3)?.id, "bwr75hd");
   assert.equal(matchPanel(880, 528, 2), undefined);
+  assert.equal(matchPanel(960, 672, 3)?.id, "bwr97");
   assert.equal(matchPanel(600, 448, 4)?.id, "color565");
   assert.equal(matchPanel(640, 384, 3)?.id, "bwr75v1");
   assert.equal(matchPanel(640, 384, 2), undefined);

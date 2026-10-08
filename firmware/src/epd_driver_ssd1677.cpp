@@ -1,8 +1,10 @@
 // ── SSD1677 7.5寸 HD 驱动 ──────────────────────────────────────────────
-// Controller: SSD1677, 880x528
-//   EPD_PANEL_75HD_SSD1677_BWR  7.5" HD B/W/R (Waveshare 7.5" HD B, GDEH075Z90)
-//   EPD_PANEL_75HD_SSD1677_BW   7.5" HD B/W   (Waveshare 7.5" HD, GDEW075T7 HD)
-// Ported from EPD-nRF5 (SSD16xx.c, GPL-3.0). Not yet checked on hardware here.
+// Controller: SSD1677 (and the SSD controller of the 9.7" Solum price tag)
+//   EPD_PANEL_75HD_SSD1677_BWR  7.5" HD B/W/R 880x528 (Waveshare 7.5" HD B, GDEH075Z90)
+//   EPD_PANEL_75HD_SSD1677_BW   7.5" HD B/W   880x528 (Waveshare 7.5" HD, GDEW075T7 HD)
+//   EPD_PANEL_97_SSD_BWR        9.7" B/W/R 960x672 (Solum price tag)
+// The 7.5" HD as EPD-nRF5 (SSD16xx.c, GPL-3.0); the 9.7" with the register values of
+// atc1441/Tag_FW_nRF52811 (unissd.cpp, controller type 0x19). Not yet checked on hardware here.
 //
 // Two RAMs: 0x24 black/white (1 = white), 0x26 red. Display update control 1 inverts
 // the red RAM (B/W/R) or ignores it (B/W), so the red plane is written active-low like
@@ -23,7 +25,7 @@
 #define EPD_GXEPD2_SPI_HZ 4000000
 #endif
 
-#if defined(EPD_PANEL_75HD_SSD1677_BWR)
+#if defined(EPD_PANEL_75HD_SSD1677_BWR) || defined(EPD_PANEL_97_SSD_BWR)
 #define SSD1677_HAS_RED 1
 #else
 #define SSD1677_HAS_RED 0
@@ -79,13 +81,22 @@ static void hardwareReset() {
 }
 
 // ── RAM window ───────────────────────────────────────────────────────
-// SSD1677 addresses X in pixels (two bytes), Y in rows; entry mode X+, Y+.
+// SSD1677 addresses X in pixels (two bytes), Y in rows; entry mode X+, Y+ (the 9.7": X-,
+// its source lines run the other way round).
 
 static void setWindow(int y0, int y1) {
+    const uint8_t xl = (W - 1) & 0xFF, xh = (W - 1) >> 8;
+#if defined(EPD_PANEL_97_SSD_BWR)
+    sendCommandData(0x11, {0x02});                                                        // data entry mode
+    sendCommandData(0x44, {xl, xh, 0x00, 0x00});                                          // RAM X: W-1 down to 0
+    sendCommandData(0x45, {(uint8_t)(y0 & 0xFF), (uint8_t)(y0 >> 8), (uint8_t)(y1 & 0xFF), (uint8_t)(y1 >> 8)});  // RAM Y
+    sendCommandData(0x4E, {xl, xh});                                                      // X counter
+#else
     sendCommandData(0x11, {0x03});                                                        // data entry mode
-    sendCommandData(0x44, {0x00, 0x00, (uint8_t)((W - 1) & 0xFF), (uint8_t)((W - 1) >> 8)});  // RAM X
+    sendCommandData(0x44, {0x00, 0x00, xl, xh});                                          // RAM X
     sendCommandData(0x45, {(uint8_t)(y0 & 0xFF), (uint8_t)(y0 >> 8), (uint8_t)(y1 & 0xFF), (uint8_t)(y1 >> 8)});  // RAM Y
     sendCommandData(0x4E, {0x00, 0x00});                                                  // X counter
+#endif
     sendCommandData(0x4F, {(uint8_t)(y0 & 0xFF), (uint8_t)(y0 >> 8)});                    // Y counter
 }
 
@@ -114,7 +125,11 @@ static void controllerInit() {
     sendCommand(0x12);                                      // SW reset
     delay(10);
     waitBusy("sw reset", 5000);
+#if defined(EPD_PANEL_97_SSD_BWR)
+    sendCommandData(0x0C, {0xAE, 0xC7, 0xC3, 0xC0, 0x80});  // booster soft start
     sendCommandData(0x01, {(uint8_t)((H - 1) & 0xFF), (uint8_t)((H - 1) >> 8), 0x00});  // driver output: H gates
+#endif
+    // (7.5" HD: gate count and scan direction as the controller resets them, as EPD-nRF5)
     sendCommandData(0x3C, {0x01});                          // border waveform
     sendCommandData(0x18, {0x80});                          // internal temperature sensor
     setWindow(0, H - 1);

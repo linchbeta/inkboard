@@ -136,7 +136,7 @@ static const int COLOR_BUF_LEN = (W * H) / 4;  // 2bpp: 4 pixels per byte
 #if defined(EPD_PANEL_75_JD79665) || defined(EPD_PANEL_583_JD79665)
 #define EPD_CONTROLLER_JD79665
 #endif
-#if defined(EPD_PANEL_75HD_SSD1677_BWR) || defined(EPD_PANEL_75HD_SSD1677_BW)
+#if defined(EPD_PANEL_75HD_SSD1677_BWR) || defined(EPD_PANEL_75HD_SSD1677_BW) || defined(EPD_PANEL_97_SSD_BWR)
 #define EPD_CONTROLLER_SSD1677
 #endif
 
@@ -144,7 +144,7 @@ static const int COLOR_BUF_LEN = (W * H) / 4;  // 2bpp: 4 pixels per byte
 // 2 = BW only, 3 = BWR (tri-color), 4 = BWRY (quad-color)
 #if (defined(EPD_CONTROLLER_UC8179) || defined(EPD_PANEL_42_HINK_SSD1683) || defined(EPD_PANEL_42_WFT) \
      || defined(EPD_PANEL_75_UC8159_BWR) || defined(EPD_PANEL_583_UC8159_BWR) \
-     || defined(EPD_PANEL_75HD_SSD1677_BWR)) && (EPD_BPP >= 2 || defined(EPD_COLOR_PAGED))
+     || defined(EPD_PANEL_75HD_SSD1677_BWR) || defined(EPD_PANEL_97_SSD_BWR)) && (EPD_BPP >= 2 || defined(EPD_COLOR_PAGED))
 #define EPD_COLOR_CAPABILITY 3
 #elif EPD_BPP >= 2 || defined(EPD_COLOR_PAGED)
 #define EPD_COLOR_CAPABILITY 4

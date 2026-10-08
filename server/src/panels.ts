@@ -179,6 +179,18 @@ export const PANELS: Record<string, Panel> = {
     cornerRadius: 0,
     measured: { ...MEASURED, yellow: MEASURED.red },
   },
+  // 9.7" B/W/R 960x672 (Solum price tag, SSD family): yellow shows red.
+  bwr97: {
+    id: "bwr97",
+    name: '9.7" B/W/R',
+    width: 960,
+    height: 672,
+    colors: 3,
+    codes: [0b00, 0b01, 0b11, 0b11],
+    ppi: 121,
+    cornerRadius: 0,
+    measured: { ...MEASURED, yellow: MEASURED.red },
+  },
 };
 
 /**
