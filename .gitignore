@@ -3,6 +3,7 @@ server/node_modules/
 server/dist/
 server/data/
 *.log
+__pycache__/
 
 # rasterised Microsoft fonts: comparison on a development machine only, never distributed
 server/assets/fonts/candidates/big/deng*
