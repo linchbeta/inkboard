@@ -38,12 +38,22 @@ SOFTWARE.
 
 月历画面（`server/src/screens/calendar.ts`、`server/src/render/gfx.ts`、`server/src/render/reftext.ts`，
 以及它在固件里的移植 `firmware/src/calendar_render.cpp`）移植自 EPD-nRF5 的 `GUI/GUI.c` 和 `GUI/Lunar.c`；
-3.98" SE0398NZ07 A0 / A1 的驱动时序参考了它的 `EPD/UC81xx.c`。EPD-nRF5 按 GPL-3.0 发布，本项目因此整体采用 GPL-3.0。
+3.98" SE0398NZ07 A0 / A1 的驱动时序参考了它的 `EPD/UC81xx.c`；UC8159 V1（5.83" / 7.5"）、UC8176 4.2" 三色、
+JD79665 四色、SSD1677 7.5" HD 的驱动（`firmware/src/epd_driver_uc8159.cpp`、`_uc8179.cpp`、`_jd79665.cpp`、`_ssd1677.cpp`）
+移植自它的 `EPD/UC81xx.c` 和 `EPD/SSD16xx.c`。EPD-nRF5 按 GPL-3.0 发布，本项目因此整体采用 GPL-3.0。
 
 ### Waveshare e-Paper 示例代码
 
 `firmware/src/epd_wft.h`、`firmware/src/epd4in2_wft.h`（WFT0420CZ15 4.2" 屏的驱动和波形表）改编自
 [waveshareteam/e-Paper](https://github.com/waveshareteam/e-Paper) 的示例代码，按其原许可（宽松许可，保留版权声明）使用。
+5.65" 七色（UC8159C）、7.3" 七色和 Spectra 6 的初始化序列（`firmware/src/epd_driver_uc8159.cpp`、`_73_color.cpp`）也按它的示例
+（epd5in65f、epd7in3f、epd7in3e）写成。
+
+### 9.7" 价签屏的寄存器值
+
+`firmware/src/epd_driver_ssd1677.cpp` 里 9.7" 960×672 三色价签屏的初始化寄存器值取自
+[atc1441/Tag_FW_nRF52811](https://github.com/atc1441/Tag_FW_nRF52811)（`unissd.cpp`）。该仓库没有声明许可证，
+这里只用了寄存器数值（硬件参数），代码是按本项目的驱动结构写的。
 
 ## 字体（`server/assets/fonts/`）
 
@@ -66,6 +76,7 @@ SOFTWARE.
 | 初中到 SAT 分级词表（运行时下载） | [KyleBing/english-vocabulary](https://github.com/KyleBing/english-vocabulary) | BSD-3-Clause |
 | 日语 JLPT N5–N1（运行时下载） | [jamsinclair/open-anki-jlpt-decks](https://github.com/jamsinclair/open-anki-jlpt-decks) | MIT |
 | 各语言常用词（运行时下载） | [hermitdave/FrequencyWords](https://github.com/hermitdave/FrequencyWords) | CC BY-SA 4.0 |
+| 古诗词：唐诗三百首、千家诗里的五言 / 七言律诗和绝句（`server/src/data/poems.ts` 后半部分，经 OpenCC 转成简体） | [chinese-poetry/chinese-poetry](https://github.com/chinese-poetry/chinese-poetry) | MIT |
 | HTTPS 根证书（`firmware/tools/certs/`、`firmware/src/cert_bundle.cpp`） | 公开的根证书机构证书 | — |
 
 kajweb/dict 和 mahavivo/english-wordlists 的词库没有声明许可证，仅为方便离线使用而打包；

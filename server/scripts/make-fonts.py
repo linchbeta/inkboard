@@ -21,6 +21,14 @@ anti-aliased rendering does): Pillow 9.5's FreeType crashes on CJK glyphs of Wen
 Needs Python 3 + Pillow + fontTools (+ numpy for --extra). Usage:
   python scripts/make-fonts.py <LXGWWenKai-Medium.ttf> <Inter_24pt-Medium.ttf> <BarlowCondensed-Bold.ttf> <NotoSansSC-Medium.otf>
   python scripts/make-fonts.py --extra <LXGWWenKai-Medium.ttf>     (only the Japanese / Korean files)
+  python scripts/make-fonts.py --add <LXGWWenKai-Medium.ttf> <NotoSansSC-Medium.otf>
+      (after adding poems: the characters they need that the WenKai and Noto files lack are
+      rendered and added; the glyphs already there stay exactly as they are)
+
+The committed files were made with Pillow 9.5.0 (FreeType 2.13.0) from LXGW WenKai v1.522:
+with those the WenKai files come out byte for byte the same (the Noto ones were made from
+an earlier Noto Sans SC than its 2.004 release). A newer Pillow draws the glyphs a little
+differently, so use 9.5.0 (Python 3.11) for --add too.
 """
 import gzip
 import os
@@ -235,7 +243,60 @@ def extra(wenkai, full):
         outline_to_bdf(wenkai, px, keep, f"lxgw-wenkai-{px}px-extra", ascent, descent)
 
 
+def _read_bdf(path):
+    """(header lines up to CHARS, {codepoint: glyph block text}) of a .bdf.gz written here."""
+    header, glyphs, cur, cp = [], {}, None, None
+    with gzip.open(path, "rt", encoding="ascii") as f:
+        for ln in f:
+            if cur is None and ln.startswith("STARTCHAR"):
+                cur = [ln]
+            elif cur is not None:
+                cur.append(ln)
+                if ln.startswith("ENCODING"):
+                    cp = int(ln.split()[1])
+                elif ln.startswith("ENDCHAR"):
+                    glyphs[cp] = "".join(cur)
+                    cur = None
+            elif not ln.startswith(("CHARS", "ENDFONT")):
+                header.append(ln)
+    return header, glyphs
+
+
+def add_missing(src, px, keep, name):
+    """Adds the glyphs of `keep` that assets/fonts/<name>.bdf.gz lacks, rendered from `src`."""
+    global OUT
+    path = os.path.join(OUT, f"{name}.bdf.gz")
+    header, glyphs = _read_bdf(path)
+    cmap = TTFont(src, lazy=True).getBestCmap()
+    missing = {cp for cp in keep if cp not in glyphs and cp in cmap}
+    if not missing:
+        return
+    import tempfile
+    real_out, OUT = OUT, tempfile.mkdtemp()
+    try:
+        ttf_to_bdf(src, px, missing, name)
+        _, new = _read_bdf(os.path.join(OUT, f"{name}.bdf.gz"))
+    finally:
+        OUT = real_out
+    glyphs.update(new)
+    with gzip.open(path, "wt", encoding="ascii", newline="\n", compresslevel=9) as f:
+        f.write("".join(header) + f"CHARS {len(glyphs)}\n" + "".join(glyphs[cp] for cp in sorted(glyphs)) + "ENDFONT\n")
+    print(f"{name}: +{len(new)} glyphs ({''.join(chr(cp) for cp in sorted(new))})")
+
+
+def add(wenkai, sans):
+    full = gb2312() | ASCII | PUNCT | poem_chars()
+    for px in (20, 22, 24, 28, 32, 40):
+        add_missing(wenkai, px, full, f"lxgw-wenkai-{px}px")
+        add_missing(sans, px, full, f"noto-sans-sc-medium-{px}px")
+    for px in (48, 56):
+        add_missing(wenkai, px, poem_chars(), f"lxgw-wenkai-{px}px-poems")
+
+
 def main():
+    if sys.argv[1] == "--add":
+        add(sys.argv[2], sys.argv[3])
+        return
     if sys.argv[1] == "--extra":
         extra(sys.argv[2], gb2312() | ASCII | PUNCT | poem_chars())
         return
