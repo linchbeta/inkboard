@@ -17,7 +17,7 @@ import { sleepSeconds } from "../schedule.js";
 import { batteryLevel } from "../data/calendar.js";
 import { panelOf, canvasFor } from "../deviceFrame.js";
 import { previewPng } from "../render/pack.js";
-import { ORIENTATIONS, isPortrait } from "../panels.js";
+import { ORIENTATIONS, isPortrait, screenLabel } from "../panels.js";
 
 /** Upright screens: a narrower preview frame. */
 const tall = (s: DeviceSettings) => (isPortrait(s.orientation) ? " tall" : "");
@@ -161,7 +161,7 @@ export function deviceRoutes(app: Hono, db: Db, now: () => Date): void {
     return c.html(page(c, {
       title: name, nav: "home",
       body: html`<p class="small" style="margin:0 0 6px"><a href="/" class="muted" style="text-decoration:none">← 概览</a></p>
-      <div class="head"><div><h1>${name}</h1><p class="sub"><code class="mac">${d.mac}</code> · ${panel?.name ?? "未知屏幕"} · 上次刷新 ${ago(d.last_seen, t)}${nw ? html`，下次约 ${hm(nw)}` : ""}</p></div>${status(d, s, t)}</div>
+      <div class="head"><div><h1>${name}</h1><p class="sub"><code class="mac">${d.mac}</code> · ${d.width ? screenLabel(d) : "未知屏幕"} · 上次刷新 ${ago(d.last_seen, t)}${nw ? html`，下次约 ${hm(nw)}` : ""}</p></div>${status(d, s, t)}</div>
       ${tabs}${body.html}`,
       script: body.script,
     }));
@@ -429,7 +429,7 @@ function deviceTab(db: Db, d: Device, s: DeviceSettings, now: Date): Tab {
         <section class="card"><h2>电量与连接</h2>${batteryChart(telemetry(db, d.mac, new Date(now.getTime() - 7 * 86_400_000).toISOString()), now)}
           <dl class="kv" style="margin-top:8px"><dt>电量</dt><dd>${battery(d.battery_v)}${d.battery_v ? ` · ${d.battery_v.toFixed(2)} V` : ""}</dd>
           <dt>信号</dt><dd>${signal(d.rssi)}${d.rssi ? ` · ${d.rssi} dBm` : ""}</dd><dt>MAC 地址</dt><dd><code>${d.mac}</code>（${macTail(d.mac)}）</dd>
-          <dt>屏幕</dt><dd>${panel?.name ?? "—"}</dd><dt>请求次数</dt><dd>${d.requests}</dd><dt>上次启动</dt><dd class="small">${d.boot ?? "—"}</dd></dl></section>
+          <dt>屏幕</dt><dd>${d.width ? screenLabel(d) : "—"}</dd><dt>请求次数</dt><dd>${d.requests}</dd><dt>上次启动</dt><dd class="small">${d.boot ?? "—"}</dd></dl></section>
         <section class="card"><h2>解绑</h2><p class="muted small" style="margin-top:-6px">解绑后这块屏会显示新的配对码，可以重新绑定到任何账号；它的播放设置和内容会清除。</p>
           <form method="post" action="/admin/devices/${d.mac}/delete" onsubmit="return confirm('解绑这块屏？')"><button>解绑设备</button></form></section>
       </div></div>`,

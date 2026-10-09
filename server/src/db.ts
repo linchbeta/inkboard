@@ -26,6 +26,8 @@ export interface Device {
   state: string | null;
   /** Owning user (null: not paired yet). */
   owner_id: number | null;
+  /** Diagonal in inches as the firmware reports it ("5.83"; null: older firmware). */
+  inch: string | null;
 }
 
 export type Db = DatabaseSync;
@@ -94,6 +96,8 @@ export function openDb(path: string): Db {
   if (!dcols.includes("state")) db.exec("ALTER TABLE device ADD COLUMN state TEXT");
   // multi-user: devices and photos belong to a user
   if (!dcols.includes("owner_id")) db.exec("ALTER TABLE device ADD COLUMN owner_id INTEGER");
+  // the panel's diagonal, reported by the firmware (panels of one resolution differ in size)
+  if (!dcols.includes("inch")) db.exec("ALTER TABLE device ADD COLUMN inch TEXT");
   const pcols = (db.prepare("PRAGMA table_info(photo)").all() as { name: string }[]).map((c) => c.name);
   if (!pcols.includes("user_id")) db.exec("ALTER TABLE photo ADD COLUMN user_id INTEGER");
   reseedInheritedStudy(db);
@@ -162,7 +166,7 @@ export function registerDevice(db: Db, mac: string, status: Device["status"] = "
 export function touchDevice(
   db: Db,
   mac: string,
-  fields: Partial<Pick<Device, "panel" | "width" | "height" | "colors" | "battery_v" | "rssi" | "boot" | "fw" | "pair_code">> = {},
+  fields: Partial<Pick<Device, "panel" | "width" | "height" | "colors" | "battery_v" | "rssi" | "boot" | "fw" | "pair_code" | "inch">> = {},
   countRequest = false,
 ): void {
   mac = normalizeMac(mac);

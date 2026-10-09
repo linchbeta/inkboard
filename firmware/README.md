@@ -47,6 +47,8 @@ ESP32 墨水屏的固件，在 InkSight 固件的基础上改的。它做的事�
 | 7.5 寸 HD SSD1677（880×528，微雪 7.5inch HD B、GDEH075Z90） | 黑白红 | `epd_75hd_ssd1677_bwr_c3_promini`、`_wroom32e` | 收一行写一行 | 否 |
 | 7.5 寸 HD SSD1677 黑白（880×528） | 黑白 | `epd_75hd_ssd1677_bw_c3_promini`、`_wroom32e` | 58 KB 黑白缓冲 | 否 |
 | 9.7 寸三色电子价签屏（Solum，960×672） | 黑白红 | `epd_97_ssd_bwr_c3_promini`、`_wroom32e`、`_yd_s3_n16r8` | 收一行写一行；但 imgBuf 要 80 KB，建议用 S3 | 否 |
+| 4.2 寸 SSD1680 黑白红屏（400×300，DKE DEPG0420RWS830F0） | 黑白红 | `epd_42_ssd1680_bwr_c3_promini`、`_wroom32e` | 收一行写一行 | 否 |
+| 同一块屏当黑白屏用（固件自带 LUT，刷得快，不显示红色） | 黑白 | `epd_42_ssd1680_bw_c3_promini`、`_wroom32e` | 15 KB 黑白缓冲 | 否 |
 | GxEPD2 的其它黑白屏：3.97 寸 GDEM0397T81、4.26 寸 GDEQ0426T82、4.2 寸 SE0420NQ04、5.83 寸 GDEW0583T8、7.5 寸 GDEY075T7（800×480 等） | 黑白 | `epd_397_gdem0397t81_*`、`epd_426_gdeq0426t82_*`、`epd_42_se0420nq04_*`、`epd_583_gdew0583t8_*`、`epd_75_gdey075t7_*`（`_c3_promini`、`_wroom32e`） | 黑白缓冲（15–48 KB），驱动是 GxEPD2 库 | 否 |
 | GxEPD2 的大尺寸黑白屏：5.76 寸 GDEH0576T81（920×680，没有局刷）、10.2 寸 GDEM102T91、11.6 寸 GDEH116T91（960×640）、13.3 寸 GDEM133T91（960×680） | 黑白 | `epd_576_gdeh0576t81_*`、`epd_102_gdem102t91_*`、`epd_116_gdeh116t91_*`、`epd_133_gdem133t91_*`（另有 `_yd_s3_n16r8`） | 黑白缓冲 75–80 KB，建议用 S3 | 否 |
 | 2.9 寸 | 黑白 | `epd_29_c3_promini`、`_wroom32e` | 没有适配：后端的版面放不下，也没有离线日历 | — |
@@ -56,6 +58,12 @@ ESP32 墨水屏的固件，在 InkSight 固件的基础上改的。它做的事�
 UC8176、JD79665、SSD1677 和 UC8159 V1 的初始化参数是从 [EPD-nRF5](https://github.com/tsl0922/EPD-nRF5) 移植的（离线日历也出自这个项目，同样是 GPL-3.0）；9.7 寸价签屏的寄存器值来自 [atc1441/Tag_FW_nRF52811](https://github.com/atc1441/Tag_FW_nRF52811)。这些面板是参照 [MiaooAim](https://github.com/bluseliu50/MiaooAim_fork) 支持的屏挑的，代码按这里的驱动结构重写，没有直接搬它的文件。
 
 黑白屏除了上面这些，[GxEPD2](https://github.com/ZinggJM/GxEPD2) 库（固件本来就用它，GPL-3.0）里横版、尺寸放得下版面的黑白屏也都接上了，在 `src/epd_driver.cpp` 里一屏一行。要再加 GxEPD2 的黑白屏，照着那几行加一个宏和编译环境就行，屏的原生分辨率要和 `EPD_WIDTH`/`EPD_HEIGHT` 一致（编译时会检查）。
+
+4.2 寸 SSD1680 屏（DKE DEPG0420RWS830F0，黑白红）的驱动在 `src/epd_driver_ssd1680.cpp`，有两种用法：
+- `epd_42_ssd1680_bwr_*`：三色。按 DKE 规格书的"LUT from OTP"流程：用屏里 OTP 存的三色波形（按板载温度传感器选），红色层写进 RAM 0x26（1 = 红），能显示红色；规格书给的刷新时间是 17 秒左右（23 °C）。黑白画面（配网、报错）也走这套波形，免得留下上一帧的红色。
+- `epd_42_ssd1680_bw_*`：当黑白屏用。不用 OTP 波形，由固件写入两套 LUT（DKE DEPG0213RH 参考序列）：每隔几次的全刷用 FAST（完整的黑白翻转，清残影），平时用 SOFT（更轻更短，闪得少）。这两套 LUT 只用 VSH1/VSL，从不用驱动红色的 VSH2，所以红色显示不出来，但刷得快。
+
+这块屏不做局部刷新，需要局刷的地方改成一次全刷。
 
 微雪 4.2inch B V2 有两种控制器：新版和 HINK 一样是 SSD1683 类（用 `epd_42_hink_ssd1683_*`），旧版是 UC8176（用 `epd_42_uc8176_bwr_*`）。JD79665 的屏直接收后端的 2bpp 数据，不用换算；SSD1677 的 HD 屏分辨率大，C3 上黑白版光黑白缓冲就要 58 KB，内存比 7.5 寸紧一些。
 
@@ -132,7 +140,7 @@ LED 常亮表示在配网模式，等手机连热点 `InkBoard-XXXX`；慢闪是
 | `src/main.cpp` | 启动流程、状态机、按键、深度睡眠 |
 | `src/network.cpp` | WiFi 和跟后端打交道：注册、心跳、取画面 |
 | `src/portal.cpp`、`data/portal_html.h` | 配网热点和网页 |
-| `src/display.cpp`、`src/epd_driver*.cpp` | 显示和各种屏的驱动。3.98 寸（A0 和 A1）、4.2 寸 HINK、UC8179、UC8159、7.3 寸彩色屏、JD79665、SSD1677 各有单独的文件（UC8176 三色和 UC8179 共用一个），其它上游的屏在 `epd_driver.cpp` 里 |
+| `src/display.cpp`、`src/epd_driver*.cpp` | 显示和各种屏的驱动。3.98 寸（A0 和 A1）、4.2 寸 HINK、UC8179、UC8159、7.3 寸彩色屏、JD79665、SSD1677、SSD1680 各有单独的文件（UC8176 三色和 UC8179 共用一个），其它上游的屏在 `epd_driver.cpp` 里 |
 | `src/storage.cpp` | 存 WiFi、服务器地址和配对码 |
 | `src/offline_calendar.cpp` | 时钟、离线日历、只当日历用、留言缓存、节假日更新 |
 | `src/calendar_render.cpp`、`src/calendar_data.h` | 本地月历，是服务器日历的 C++ 移植版，以及它要用的数据 |
