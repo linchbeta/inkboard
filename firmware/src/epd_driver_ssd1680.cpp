@@ -1,5 +1,6 @@
 // ── SSD1680 4.2寸黑白红屏驱动 ─────────────────────────────────────────
-// Panel: 400x300 B/W/R (DKE, SSD1680-class controller). Two ways to drive it:
+// Panel: DKE DEPG0420RWS830F0, 400x300 black / white / red (SSD1680-class controller;
+// typical 3-colour update 17 s at 23 C). Two ways to drive it:
 //   EPD_PANEL_42_SSD1680_BW   B/W only, with LUTs written by the MCU instead of the panel's
 //     OTP ones (the skeleton of the DKE DEPG0213RH reference sequence). They use only VSH1 /
 //     VSL / VSS -- never VSH2, the red voltage -- so red is never drawn, and the refresh is
@@ -188,13 +189,19 @@ static void initPanel(const uint8_t *lut, const char *tag) {
     sendData(0x00);
     sendData(0x00);
 
-    sendCommand(0x3C);  // border waveform
-    sendData(lut ? 0x01 : 0x05);  // (3-colour: white border following the LUT, as the HINK)
+    sendCommand(0x3C);  // border waveform: the GS transition of LUT1 (white)
+    sendData(0x01);
 
     if (lut) {
         loadLut(lut);
     } else {
-        sendCommand(0x18);  // internal temperature sensor: the OTP waveform is picked by it
+        // DEPG0420RWS830F0 spec: 0x2B "should be set" to 0x04 0x63 (fewer glitches when
+        // VCOM toggles); the internal temperature sensor (POR: an external I2C one, which
+        // the module may not have) picks the OTP waveform
+        sendCommand(0x2B);
+        sendData(0x04);
+        sendData(0x63);
+        sendCommand(0x18);
         sendData(0x80);
     }
     setCursorOrigin();
@@ -292,7 +299,9 @@ static void writeRow2bpp(int row, const uint8_t *row2bpp) {
 }
 
 static void refreshColour() {
-    sendCommand(0x22);  // load the OTP waveform for the temperature, display
+    // clock, analog on, load the temperature, load the OTP waveform, display, analog and
+    // clock off: the spec's 0x90 (load LUT) and 0x47 (display) in one, with the temperature
+    sendCommand(0x22);
     sendData(0xF7);
     sendCommand(0x20);
     const unsigned long busy = waitBusy("refresh", 60000);
