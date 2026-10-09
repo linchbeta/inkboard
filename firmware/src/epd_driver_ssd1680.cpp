@@ -1,10 +1,15 @@
-// ── SSD1680 4.2寸黑白屏驱动（自带 LUT）────────────────────────────────
-// Panel: 400x300 B/W on an SSD1680-class controller (EPD_PANEL_42_SSD1680_BW), driven with
-// LUTs written by the MCU instead of the panel's OTP ones (the skeleton of the DKE
-// DEPG0213RH reference sequence):
-//   - FAST: the full transition phases, for the periodic full refresh (epdDisplay);
-//   - SOFT: the same phases, weaker and shorter: less flashing, black still returns to
-//     white -- the everyday refresh (epdDisplayFast) and what partial updates fall back to.
+// ── SSD1680 4.2寸黑白红屏驱动 ─────────────────────────────────────────
+// Panel: 400x300 B/W/R (DKE, SSD1680-class controller). Two ways to drive it:
+//   EPD_PANEL_42_SSD1680_BW   B/W only, with LUTs written by the MCU instead of the panel's
+//     OTP ones (the skeleton of the DKE DEPG0213RH reference sequence). They use only VSH1 /
+//     VSL / VSS -- never VSH2, the red voltage -- so red is never drawn, and the refresh is
+//     quick:
+//       - FAST: the full transition phases, for the periodic full refresh (epdDisplay);
+//       - SOFT: the same phases, weaker and shorter: less flashing, black still returns to
+//         white -- the everyday refresh (epdDisplayFast) and what partial updates fall back to.
+//   EPD_PANEL_42_SSD1680_BWR  black, white and red: the panel's own 3-colour waveform from
+//     its OTP (display update 0xF7 loads it for the measured temperature), the red plane in
+//     RAM 0x26 (1 = red). Frames are streamed row by row, no frame buffer.
 // Ported from the user's ssd1680_native.cpp (command sequence, LUTs and frame layout as
 // there: RAM entry X+ / Y-, cursor at the bottom row, each row written mirrored).
 // BUSY is HIGH while the controller works.
@@ -152,6 +157,7 @@ static void loadLut(const uint8_t *lut) {
     endTransfer();
 }
 
+// lut: the MCU's waveform; nullptr: the panel's OTP one (3-colour)
 static void initPanel(const uint8_t *lut, const char *tag) {
     startSpi();
     resetPanel();
@@ -183,9 +189,14 @@ static void initPanel(const uint8_t *lut, const char *tag) {
     sendData(0x00);
 
     sendCommand(0x3C);  // border waveform
-    sendData(0x01);
+    sendData(lut ? 0x01 : 0x05);  // (3-colour: white border following the LUT, as the HINK)
 
-    loadLut(lut);
+    if (lut) {
+        loadLut(lut);
+    } else {
+        sendCommand(0x18);  // internal temperature sensor: the OTP waveform is picked by it
+        sendData(0x80);
+    }
     setCursorOrigin();
     delay(10);
     s_asleep = false;
@@ -199,6 +210,7 @@ static inline uint8_t reverseBits(uint8_t v) {
     return v;
 }
 
+#if !defined(EPD_PANEL_42_SSD1680_BWR)  // (B/W build: frames with the MCU LUTs)
 // The 1bpp frame (1 = white) from its last row up, each row mirrored -- the reference's layout.
 static void writeBwPlane(const uint8_t *image) {
     setCursorOrigin();
@@ -234,6 +246,97 @@ static void displayFullFrame(const uint8_t *image, const uint8_t *lut, const cha
     delay(100);
     s_asleep = true;
 }
+#endif
+
+#if defined(EPD_PANEL_42_SSD1680_BWR)
+// ── 3-colour frames ──────────────────────────────────────────────────
+// Each 2bpp row (00 black, 01 white, 10 / 11 red) goes to its own row of both RAMs,
+// mirrored as the B/W frames are: RAM byte b of row r holds image bytes W/8-1-b, bits
+// reversed. The RAM counts Y down (X+ / Y-), so a one-row window is [r, r].
+
+static void setRow(int row) {
+    sendCommand(0x45);  // RAM Y window: this row only
+    sendData(row & 0xFF);
+    sendData((row >> 8) & 0xFF);
+    sendData(row & 0xFF);
+    sendData((row >> 8) & 0xFF);
+    sendCommand(0x4E);
+    sendData(0x00);
+    sendCommand(0x4F);
+    sendData(row & 0xFF);
+    sendData((row >> 8) & 0xFF);
+}
+
+static void writeRow2bpp(int row, const uint8_t *row2bpp) {
+    uint8_t black[kLineBytes], red[kLineBytes];
+    for (int i = 0; i < kLineBytes; i++) {
+        uint8_t k = 0xFF, r = 0x00;  // black plane: 1 = white; red plane: 1 = red
+        for (int px = 0; px < 8; px++) {
+            const uint8_t code = (row2bpp[i * 2 + px / 4] >> (6 - (px % 4) * 2)) & 0x03;
+            if (code == 0x00) k &= ~(0x80 >> px);
+            else if (code >= 0x02) r |= 0x80 >> px;
+        }
+        black[i] = k;
+        red[i] = r;
+    }
+    setRow(row);
+    sendCommand(0x24);
+    beginTransfer(true);
+    for (int b = kLineBytes - 1; b >= 0; --b) SPI.transfer(reverseBits(black[b]));
+    endTransfer();
+    setRow(row);
+    sendCommand(0x26);
+    beginTransfer(true);
+    for (int b = kLineBytes - 1; b >= 0; --b) SPI.transfer(reverseBits(red[b]));
+    endTransfer();
+}
+
+static void refreshColour() {
+    sendCommand(0x22);  // load the OTP waveform for the temperature, display
+    sendData(0xF7);
+    sendCommand(0x20);
+    const unsigned long busy = waitBusy("refresh", 60000);
+    Serial.printf("[EPD-SSD1680] 3-colour display busy=%lums\n", busy);
+    sendCommand(0x10);  // deep sleep
+    sendData(0x01);
+    delay(100);
+    s_asleep = true;
+}
+
+bool epdStreamBegin() {
+    initPanel(nullptr, "BWR");
+    return true;
+}
+
+void epdStreamWriteRow(int imageRow, const uint8_t *row2bpp) {
+    writeRow2bpp(imageRow, row2bpp);
+}
+
+void epdStreamEnd() {
+    refreshColour();
+}
+
+void epdStreamAbort() {}  // (the next frame starts with a reset)
+
+#if defined(EPD_COLOR_PAGED)
+#include <LittleFS.h>
+void epdDisplay2bppPaged(const char *path) {
+    File f = LittleFS.open(path, "r");
+    if (!f) {
+        Serial.println("[EPD-SSD1680] color file missing");
+        return;
+    }
+    epdStreamBegin();
+    uint8_t row[W / 4];
+    for (int r = 0; r < H; r++) {
+        if (f.read(row, sizeof row) != sizeof row) memset(row, 0x55, sizeof row);  // (white)
+        writeRow2bpp(r, row);
+    }
+    f.close();
+    epdStreamEnd();
+}
+#endif
+#endif  // EPD_PANEL_42_SSD1680_BWR
 
 // ── GPIO initialization ──────────────────────────────────────────────
 
@@ -252,6 +355,45 @@ void gpioInit() {
 
 // ── Public EPD interface ─────────────────────────────────────────────
 
+#if defined(EPD_PANEL_42_SSD1680_BWR)
+// 3-colour build: every frame with the panel's own waveform, B/W screens (setup, errors,
+// imgBuf) too -- the MCU LUTs never drive red, so they could leave the red of an earlier
+// frame on the panel.
+
+void epdInit() {
+    initPanel(nullptr, "BWR");
+}
+
+void epdInitFast() {
+    epdInit();
+}
+
+void epdDisplay(const uint8_t *image) {
+    static const uint8_t NIBBLE_TO_2BPP[16] = {
+        0x00, 0x01, 0x04, 0x05, 0x10, 0x11, 0x14, 0x15, 0x40, 0x41, 0x44, 0x45, 0x50, 0x51, 0x54, 0x55};
+    epdStreamBegin();
+    uint8_t row[W / 4];
+    for (int r = 0; r < H; r++) {
+        const uint8_t *src = image + r * kLineBytes;
+        for (int i = 0; i < kLineBytes; i++) {
+            row[i * 2] = NIBBLE_TO_2BPP[src[i] >> 4];
+            row[i * 2 + 1] = NIBBLE_TO_2BPP[src[i] & 0x0F];
+        }
+        writeRow2bpp(r, row);
+    }
+    epdStreamEnd();
+}
+
+void epdDisplayFast(const uint8_t *image) {
+    epdDisplay(image);
+}
+
+void epdDisplay2bpp(const uint8_t *image2bpp) {
+    epdStreamBegin();
+    for (int r = 0; r < H; r++) writeRow2bpp(r, image2bpp + r * (W / 4));
+    epdStreamEnd();
+}
+#else
 void epdInit() {
     initPanel(kFastLut, "FAST");
 }
@@ -270,7 +412,7 @@ void epdDisplayFast(const uint8_t *image) {
     displayFullFrame(image, kSoftLut, "SOFT");
 }
 
-// A 2bpp frame on this B/W panel: white stays white, everything else is black (as the
+// A 2bpp frame in the B/W build: white stays white, everything else is black (as the
 // server draws red and yellow for B/W panels).
 void epdDisplay2bpp(const uint8_t *image2bpp) {
     for (int i = 0; i < IMG_BUF_LEN; i++) {
@@ -283,9 +425,10 @@ void epdDisplay2bpp(const uint8_t *image2bpp) {
     }
     epdDisplay(imgBuf);
 }
+#endif
 
 // No partial refresh (the reference has it disabled): the whole screen (imgBuf, which the
-// callers draw into first) with the lighter LUT.
+// callers draw into first) -- with the lighter LUT in the B/W build.
 bool epdSupportsPartialRefresh() {
     return false;
 }

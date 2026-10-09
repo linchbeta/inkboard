@@ -144,8 +144,8 @@ static const int COLOR_BUF_LEN = (W * H) / 4;  // 2bpp: 4 pixels per byte
 #define EPD_CONTROLLER_SSD1677
 #endif
 
-// ── SSD1680 4.2" B/W with its own LUTs (epd_driver_ssd1680.cpp) ──
-#if defined(EPD_PANEL_42_SSD1680_BW)
+// ── SSD1680 4.2" B/W/R: B/W with its own LUTs, or 3-colour (epd_driver_ssd1680.cpp) ──
+#if defined(EPD_PANEL_42_SSD1680_BW) || defined(EPD_PANEL_42_SSD1680_BWR)
 #define EPD_CONTROLLER_SSD1680
 #endif
 
@@ -153,7 +153,8 @@ static const int COLOR_BUF_LEN = (W * H) / 4;  // 2bpp: 4 pixels per byte
 // 2 = BW only, 3 = BWR (tri-color), 4 = BWRY (quad-color)
 #if (defined(EPD_CONTROLLER_UC8179) || defined(EPD_PANEL_42_HINK_SSD1683) || defined(EPD_PANEL_42_WFT) \
      || defined(EPD_PANEL_75_UC8159_BWR) || defined(EPD_PANEL_583_UC8159_BWR) \
-     || defined(EPD_PANEL_75HD_SSD1677_BWR) || defined(EPD_PANEL_97_SSD_BWR)) && (EPD_BPP >= 2 || defined(EPD_COLOR_PAGED))
+     || defined(EPD_PANEL_75HD_SSD1677_BWR) || defined(EPD_PANEL_97_SSD_BWR) \
+     || defined(EPD_PANEL_42_SSD1680_BWR)) && (EPD_BPP >= 2 || defined(EPD_COLOR_PAGED))
 #define EPD_COLOR_CAPABILITY 3
 #elif EPD_BPP >= 2 || defined(EPD_COLOR_PAGED)
 #define EPD_COLOR_CAPABILITY 4
