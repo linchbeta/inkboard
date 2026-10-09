@@ -144,6 +144,11 @@ static const int COLOR_BUF_LEN = (W * H) / 4;  // 2bpp: 4 pixels per byte
 #define EPD_CONTROLLER_SSD1677
 #endif
 
+// ── SSD1680 4.2" B/W with its own LUTs (epd_driver_ssd1680.cpp) ──
+#if defined(EPD_PANEL_42_SSD1680_BW)
+#define EPD_CONTROLLER_SSD1680
+#endif
+
 // ── EPD color capability ─────────────────────────────────────
 // 2 = BW only, 3 = BWR (tri-color), 4 = BWRY (quad-color)
 #if (defined(EPD_CONTROLLER_UC8179) || defined(EPD_PANEL_42_HINK_SSD1683) || defined(EPD_PANEL_42_WFT) \
