@@ -85,8 +85,10 @@ export function compatRoutes(db: Db, opts: AppOptions): Hono {
     const panel = matchPanel(w, h, colors) ?? genericPanel(w, h);
     const batteryV = num(q.v);
     const rssi = int(q.rssi);
+    // the diagonal (our firmware: "5.83"); not sent by older firmware or upstream InkSight
+    const inch = /^\d{1,2}(\.\d{1,2})?$/.test(q.inch ?? "") ? q.inch : undefined;
     touchDevice(db, mac, { panel: panel.id, width: w, height: h, colors, battery_v: batteryV, rssi,
-                           boot: q.boot }, true);
+                           boot: q.boot, inch }, true);
     const device = getDevice(db, mac)!;
     const now = opts.now();
     const { frame, settings } = await frameFor(db, device, panel, now, {

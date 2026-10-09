@@ -661,6 +661,7 @@ static bool fetchFrame(bool nextMode, bool *isFallback, String *renderedModeIdOu
                + "&w=" + String(W) + "&h=" + String(H)
                + "&bpp=" + String(EPD_BPP)
                + "&colors=" + String(colorCapability);
+    if (EPD_INCH[0]) url += "&inch=" EPD_INCH;
     if (nextMode) {
         url += "&next=1";
     }

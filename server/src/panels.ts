@@ -194,6 +194,29 @@ export const PANELS: Record<string, Panel> = {
 };
 
 /**
+ * The usual diagonal (inches) of a panel of this resolution, for devices that do not say
+ * (older firmware, upstream InkSight): the commonest panel of each size. Ours report it.
+ */
+const DIAGONALS: Record<string, string> = {
+  "296x128": "2.9", "400x300": "4.2", "600x448": "5.83", "640x384": "7.5", "648x480": "5.83",
+  "768x552": "3.98", "800x480": "7.5", "880x528": "7.5", "920x680": "5.76", "960x640": "10.2",
+  "960x672": "9.7", "960x680": "13.3",
+};
+
+/** A device's diagonal: as it reports it, else the usual one of its resolution. */
+export function diagonalOf(d: { inch?: string | null; width?: number | null; height?: number | null }): string | undefined {
+  return d.inch || (d.width && d.height ? DIAGONALS[`${d.width}x${d.height}`] : undefined);
+}
+
+/** '5.83" 黑白红 · 600×448': size, inks and resolution (no size if unknown). */
+export function screenLabel(d: { inch?: string | null; width?: number | null; height?: number | null; colors?: number | null }): string {
+  const inks = d.colors === 4 ? "黑白黄红" : d.colors === 3 ? "黑白红" : "黑白";
+  const size = diagonalOf(d);
+  const res = d.width && d.height ? ` · ${d.width}×${d.height}` : "";
+  return `${size ? `${size}" ` : ""}${inks}${res}`;
+}
+
+/**
  * How a screen stands. "portrait" is the landscape panel turned a quarter counter-clockwise
  * (its top edge on the left); the "-flip" ones are those turned half way round. Layouts are
  * drawn upright at the oriented size (orientedPanel) and turned into the panel's own
