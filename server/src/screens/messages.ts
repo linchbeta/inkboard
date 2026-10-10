@@ -51,11 +51,11 @@ export function renderMessages(panel: Panel, ctx: ScreenContext) {
   let y = f.top + (large ? 24 : 12) + Math.max(0, Math.round((area - blockH) / 2)) + font.ascent;
   const bx = centeredBlockX(lines.map((l) => width(font, l)), W, m, textX, y - font.ascent, f.top + (large ? 52 : 32));
   for (const l of lines) { print(c, font, l, bx, y, Ink.Black); y += lh; }
-  // signature, right-aligned under the text
+  // signature under the text, right-aligned to the screen's margin (as 一言's source) --
+  // not to the text block, which a short message makes narrow and centred
   const sig = `—— ${main.from || "家人"}  ${when(main.at, ctx.now)}`;
   const sf = large ? wqy12 : wqy9;
-  const right = Math.min(W - m, Math.max(bx + Math.max(...lines.map((l) => width(font, l))), m + width(sf, sig)));
-  print(c, sf, sig, right - width(sf, sig), Math.min(mainBottom - 4, y - lh + (large ? 34 : 22)), Ink.Black);
+  print(c, sf, sig, W - m - width(sf, sig), Math.min(mainBottom - 4, y - lh + (large ? 34 : 22)), Ink.Black);
 
   if (olderRows) {
     c.dottedH(m, W - m, olderTop - (large ? 8 : 5), Ink.Black, 1, 3);
