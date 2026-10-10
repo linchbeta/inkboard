@@ -41,7 +41,7 @@ ESP32 墨水屏的固件，在 InkSight 固件的基础上改的。它做的事�
 | 7.5 寸 V1 黑白（UC8159，640×384，微雪 7.5inch V1、GDEW075T8） | 黑白 | `epd_75_uc8159_bw_c3_promini`、`_wroom32e` | 30 KB 黑白缓冲 | 否 |
 | 5.83 寸 V1 三色（UC8159，600×448，微雪 5.83inch B V1、GDEW0583Z21） | 黑白红 | `epd_583_uc8159_bwr_c3_promini`、`_wroom32e` | 收一行写一行 | 否 |
 | 5.83 寸 V1 黑白（UC8159，600×448，微雪 5.83inch V1、GDEW0583T7） | 黑白 | `epd_583_uc8159_bw_c3_promini`、`_wroom32e` | 33 KB 黑白缓冲 | 否 |
-| 4.2 寸 UC8176（微雪 4.2inch B V1、GDEW042Z15） | 黑白红 | `epd_42_uc8176_bwr_c3_promini`、`_wroom32e` | 黑白部分逐行写，红色部分先放内存（15 KB） | 否 |
+| 4.2 寸 UC8176（微雪 4.2inch B V1、GDEW042Z15） | 黑白红 | `epd_42_uc8176_bwr_c3_promini`、`_wroom32e` | 黑白部分逐行写，红色部分先放内存（15 KB） | 是 |
 | 7.5 寸 JD79665（GDEM075F52） | 黑白黄红 | `epd_75_jd79665_c3_promini`、`_wroom32e` | 收一行写一行 | 否 |
 | 5.83 寸 JD79665（648×480） | 黑白黄红 | `epd_583_jd79665_c3_promini`、`_wroom32e` | 收一行写一行 | 否 |
 | 7.5 寸 HD SSD1677（880×528，微雪 7.5inch HD B、GDEH075Z90） | 黑白红 | `epd_75hd_ssd1677_bwr_c3_promini`、`_wroom32e` | 收一行写一行 | 否 |

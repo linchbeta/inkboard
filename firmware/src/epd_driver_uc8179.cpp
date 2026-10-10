@@ -121,16 +121,37 @@ static void uc8179InitController() {
     epdReset();
 
 #if defined(EPD_PANEL_42_UC8176_BWR)
-    // UC8176: power and booster from its OTP; panel setting, border and resolution only
-    epdSendCommand(0x00);  // PSR: B/W/R, LUT from OTP
+    // UC8176 (as the Waveshare 4.2" B sample and GxEPD2_420c): a long reset, then wait
+    // until the controller is ready -- commands sent while it is still busy after the
+    // reset are dropped, and without 0x00 / 0x50 it stays in its B/W mode (no red,
+    // greyish whites). Then the booster, power on, and B/W/R with the OTP waveform.
+    digitalWrite(PIN_EPD_RST, HIGH);
+    delay(200);
+    digitalWrite(PIN_EPD_RST, LOW);
+    delay(2);
+    digitalWrite(PIN_EPD_RST, HIGH);
+    delay(200);
+    {
+        const unsigned long t0 = millis();
+        epdWaitBusy(2000);
+        Serial.printf("[EPD-UC8176] reset: BUSY idle after %lums\n", millis() - t0);
+    }
+    epdSendCommand(0x06);  // booster soft start
+    epdSendData(0x17);
+    epdSendData(0x17);
+    epdSendData(0x17);
+    epdSendCommand(0x04);  // power on
+    delay(10);
+    epdWaitBusy(2000);
+    epdSendCommand(0x00);  // PSR: 400x300, LUT from OTP, B/W/R (KW/R = 0)
     epdSendData(0x0F);
-    epdSendCommand(0x50);  // CDI
-    epdSendData(0x77);
     epdSendCommand(0x61);  // TRES
     epdSendData(W >> 8);
     epdSendData(W & 0xFF);
     epdSendData(H >> 8);
     epdSendData(H & 0xFF);
+    epdSendCommand(0x50);  // CDI: B/W/R data, white border (GxEPD2: "WBRmode VBDW 77")
+    epdSendData(0x77);
     uc8179_initialized = true;
     return;
 #endif
@@ -194,11 +215,28 @@ static void uc8179WriteImage(const uint8_t *black_plane, const uint8_t *color_pl
 // the 7.5" GDEY075Z08 to restrict the refresh area, producing black borders.
 
 static void uc8179Refresh() {
+#if defined(EPD_PANEL_42_UC8176_BWR)
+    // power on again (a no-op if still on; off after an earlier refresh of this wake), then
+    // the 3-colour refresh: ~16 s at room temperature (GxEPD2: 15.8 s), longer when cold.
+    // The log tells a cut-short one (BUSY idle at once).
+    epdSendCommand(0x04);
+    delay(10);
+    epdWaitBusy(2000);
+    epdSendCommand(0x12);
+    delay(100);
+    const int busyAtStart = digitalRead(PIN_EPD_BUSY);
+    const unsigned long t0 = millis();
+    epdWaitBusy(60000);
+    Serial.printf("[EPD-UC8176] refresh: BUSY %s at start, %lums\n", busyAtStart == LOW ? "low (busy)" : "HIGH (idle?!)",
+                  millis() - t0 + 100);
+    uc8179PowerOff();
+#else
     uc8179PowerOn();
     epdSendCommand(0x12);
     delay(100);
     epdWaitBusy(30000);
     uc8179PowerOff();
+#endif
 }
 
 // ── Full display pipeline ─────────────────────────────────────────────
@@ -475,6 +513,10 @@ void epdPartialDisplay(uint8_t *data, int xStart, int yStart, int xEnd, int yEnd
 
 void epdSleep() {
     if (!uc8179_initialized) return;
+#if defined(EPD_PANEL_42_UC8176_BWR)
+    epdSendCommand(0x50);  // border floating while powering off (Waveshare sample)
+    epdSendData(0xF7);
+#endif
     uc8179PowerOff();
     epdSendCommand(0x07);
     epdSendData(0xA5);
